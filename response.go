@@ -14,7 +14,7 @@ import (
 type Response struct {
 	request    *Request
 	response   *http.Response
-	copiedBody io.Reader
+	copiedBody *bytes.Buffer
 
 	// set through Options
 	contentType string
@@ -74,7 +74,11 @@ func (resp *Response) Decode(c context.Context, v interface{}, opts ...DecodeOpt
 }
 
 // Bytes reads the body into a buffer and then returns the bytes
+// returns error based on resp.response.Body.Close()
 func (resp *Response) Bytes() ([]byte, error) {
+	if resp.copiedBody != nil {
+		return resp.copiedBody.Bytes(), nil
+	}
 	buf := getBuffer()
 	buf.ReadFrom(resp.response.Body)
 	if err := resp.response.Body.Close(); err != nil {
@@ -85,10 +89,16 @@ func (resp *Response) Bytes() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// MustBytes reads the body into a buffer and then returns the bytes
+func (resp *Response) MustBytes() []byte {
+	bts, _ := resp.Bytes()
+	return bts
+}
+
 // Body returns the resp.response.Body as io.Reader
 // NOTE: original io.ReadCloser body is closed when Close is called by the user
 func (resp *Response) Body() io.Reader {
-	if resp.keepBody {
+	if resp.keepBody && resp.copiedBody != nil {
 		return resp.copiedBody
 	}
 	return resp.response.Body
@@ -96,10 +106,8 @@ func (resp *Response) Body() io.Reader {
 
 // Close handles any needed clean-up after the user is done with the Response object
 func (resp *Response) Close() error {
-	if resp.keepBody {
-		if buf, ok := resp.copiedBody.(*bytes.Buffer); ok {
-			putBuffer(buf)
-		}
+	if resp.keepBody && resp.copiedBody != nil {
+		putBuffer(resp.copiedBody)
 	}
 	if resp.bodyClosed {
 		return nil
