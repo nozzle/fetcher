@@ -48,17 +48,6 @@ func TestNewRequest(t *testing.T) {
 			nil,
 			true,
 		},
-		{
-			"http.NewRequest url parse error",
-			args{
-				c:      ctx,
-				method: "BADMETHOD",
-				url:    "http:/www.mywebsite.com",
-				opts:   []RequestOption{},
-			},
-			nil,
-			true,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
