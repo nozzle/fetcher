@@ -129,7 +129,13 @@ func (cl *Client) Delete(c context.Context, url string, opts ...fetcher.RequestO
 }
 
 func (cl *Client) UnmetExpectations() []*ExpectedRequest {
-	return nil
+	unmet := make([]*ExpectedRequest, 0, len(cl.expectedRequests)-cl.metCount())
+	for i := range cl.expectedRequests {
+		if !cl.expectedRequests[i].wasMet {
+			unmet = append(unmet, cl.expectedRequests[i])
+		}
+	}
+	return unmet
 }
 
 func (cl *Client) metCount() int {
