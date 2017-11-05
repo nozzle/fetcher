@@ -3,8 +3,6 @@ package fetcher
 import (
 	"bytes"
 	"context"
-	"encoding/gob"
-	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -14,14 +12,16 @@ import (
 type Response struct {
 	request    *Request
 	response   *http.Response
+	body       io.Reader
 	copiedBody *bytes.Buffer
 
 	// set through Options
-	contentType string
-	keepBody    bool
+	keepBody bool
 
 	// used by Close()
 	bodyClosed bool
+
+	decodeFunc DecodeFunc
 }
 
 // NewResponse returns a Response with the given Request and http.Response
@@ -29,16 +29,13 @@ func NewResponse(c context.Context, req *Request, resp *http.Response) *Response
 	return &Response{
 		request:  req,
 		response: resp,
+		body:     resp.Body,
 	}
 }
 
 // Decode decodes the resp.response.Body into the given object (v) using the specified decoder
 // NOTE: v is assumed to be a pointer
 func (resp *Response) Decode(c context.Context, v interface{}, opts ...DecodeOption) error {
-	// auto-set the contentType based on the response header
-	// NOTE: will be overwritten with DecodeWithJSON or DecodeWithGob options
-	resp.contentType = resp.response.Header.Get(ContentTypeHeader)
-
 	// execute all options
 	var err error
 	for _, opt := range opts {
@@ -47,27 +44,29 @@ func (resp *Response) Decode(c context.Context, v interface{}, opts ...DecodeOpt
 		}
 	}
 
-	defer resp.response.Body.Close()
-	var r io.Reader = resp.response.Body
-	if resp.keepBody {
-		buf := getBuffer()
-		r = io.TeeReader(resp.response.Body, buf)
-		resp.copiedBody = buf
+	// auto-set the decoder based on the response header if one hasn't been specified
+	if resp.decodeFunc == nil {
+		resp.decodeFunc = resp.detectDecoder()
 	}
 
-	switch resp.contentType {
+	defer resp.response.Body.Close()
+
+	if resp.decodeFunc == nil {
+		return errors.New("no valid decoder specified")
+	}
+
+	return resp.decodeFunc(resp.body, v)
+}
+
+// detectDecoder auto-selects a decoder based on the response header
+func (resp *Response) detectDecoder() DecodeFunc {
+	switch resp.response.Header.Get(ContentTypeHeader) {
 	case ContentTypeJSON:
-		if err = json.NewDecoder(r).Decode(v); err != nil {
-			return err
-		}
+		resp.decodeFunc = jsonDecodeFunc
 
 	case ContentTypeGob:
-		if err = gob.NewDecoder(r).Decode(v); err != nil {
-			return err
-		}
+		resp.decodeFunc = gobDecodeFunc
 
-	default:
-		return errors.New("unrecognized contentType")
 	}
 
 	return nil
@@ -124,31 +123,4 @@ func (resp *Response) StatusCode() int {
 
 func (resp *Response) Status() string {
 	return resp.response.Status
-}
-
-// DecodeOption is a func to configure optional Response settings
-type DecodeOption func(c context.Context, resp *Response) error
-
-// DecodeWithJSON json decodes the body of the Response
-func DecodeWithJSON() DecodeOption {
-	return func(c context.Context, resp *Response) error {
-		resp.contentType = ContentTypeJSON
-		return nil
-	}
-}
-
-// DecodeWithGob gob decodes the body of the Response
-func DecodeWithGob() DecodeOption {
-	return func(c context.Context, resp *Response) error {
-		resp.contentType = ContentTypeGob
-		return nil
-	}
-}
-
-// DecodeWithCopiedBody gob decodes the body of the Response
-func DecodeWithCopiedBody() DecodeOption {
-	return func(c context.Context, resp *Response) error {
-		resp.keepBody = true
-		return nil
-	}
 }
