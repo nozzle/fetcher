@@ -42,6 +42,9 @@ type Request struct {
 	// append using RequestWithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
 
+	// convenience option for context cancellation
+	deadline time.Time
+
 	// retry config
 	maxAttempts     int
 	backoffStrategy backoffStrategy
@@ -273,6 +276,22 @@ func RequestWithExponentialJitterBackoff(min, max time.Duration) RequestOption {
 			max:       max,
 			useJitter: true,
 		}
+		return nil
+	}
+}
+
+// RequestWithTimeout is a convenience function around context.WithTimeout
+func RequestWithTimeout(timeout time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.deadline = time.Now().Add(timeout)
+		return nil
+	}
+}
+
+// RequestWithDeadline is a convenience function around context.WithDeadline
+func RequestWithDeadline(deadline time.Time) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.deadline = deadline
 		return nil
 	}
 }
