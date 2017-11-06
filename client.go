@@ -46,6 +46,12 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		return nil, c.Err()
 	}
 
+	if !req.deadline.IsZero() {
+		var cancelFunc context.CancelFunc
+		c, cancelFunc = context.WithDeadline(c, req.deadline)
+		defer cancelFunc()
+	}
+
 	req.client = cl
 
 	reqc := req.request.WithContext(c)
