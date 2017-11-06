@@ -13,6 +13,7 @@ import (
 const (
 	ContentTypeJSON   = "application/json"
 	ContentTypeGob    = "application/gob"
+	ContentTypeXML    = "application/xml"
 	ContentTypeHeader = "Content-Type"
 	AcceptHeader      = "Accept"
 )

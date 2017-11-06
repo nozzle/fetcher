@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/gob"
 	"encoding/json"
+	"encoding/xml"
 	"io"
 )
 
@@ -16,6 +17,10 @@ func jsonDecodeFunc(r io.Reader, v interface{}) error {
 
 func gobDecodeFunc(r io.Reader, v interface{}) error {
 	return gob.NewDecoder(r).Decode(v)
+}
+
+func xmlDecodeFunc(r io.Reader, v interface{}) error {
+	return xml.NewDecoder(r).Decode(v)
 }
 
 // DecodeOption is a func to configure optional Response settings

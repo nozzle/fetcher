@@ -67,6 +67,8 @@ func (resp *Response) detectDecoder() DecodeFunc {
 	case ContentTypeGob:
 		resp.decodeFunc = gobDecodeFunc
 
+	case ContentTypeXML:
+		resp.decodeFunc = xmlDecodeFunc
 	}
 
 	return nil
