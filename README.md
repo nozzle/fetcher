@@ -1,2 +1,2 @@
-# fetcher
+# fetcher [![CircleCI](https://img.shields.io/circleci/project/github/nozzle/fetcher.svg)](https://circleci.com/gh/nozzle/fetcher) [![GoDoc](https://godoc.org/github.com/nozzle/fetcher?status.svg)](https://godoc.org/github.com/nozzle/fetcher) [![Codecov](https://img.shields.io/codecov/c/github/nozzle/fetcher.svg)](https://codecov.io/gh/nozzle/fetcher/) [![Go Report Card](https://goreportcard.com/badge/github.com/nozzle/fetcher)](https://goreportcard.com/report/github.com/nozzle/fetcher)
 HTTP Client - Simplified - Mockable
