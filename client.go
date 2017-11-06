@@ -55,7 +55,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 
 	resp := &Response{}
 	var err error
-	for i := 0; i < req.maxAttempts; i++ {
+	for i := 1; i <= req.maxAttempts; i++ {
 		resp.response, err = cl.client.Do(reqc)
 		if err != nil {
 			return nil, err
@@ -66,6 +66,24 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		// a bad request given, or a response with Location header missing or bad
 		if resp.response.StatusCode < 500 {
 			break
+		}
+
+		// break out of the retry loop if this is the last attempt, so we don't close the response body
+		// or sleep unnecessarily
+		if i == req.maxAttempts {
+			break
+		}
+
+		// close the response body before we lose our reference to it
+		if err = resp.response.Body.Close(); err != nil {
+			return nil, err
+		}
+
+		// wait before retrying, returning early if the context is cancelled
+		select {
+		case <-time.After(req.backoffStrategy.waitDuration(i)):
+		case <-c.Done():
+			return nil, c.Err()
 		}
 	}
 
