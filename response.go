@@ -119,10 +119,12 @@ func (resp *Response) Close() error {
 	return nil
 }
 
+// StatusCode exports resp.StatusCode
 func (resp *Response) StatusCode() int {
 	return resp.response.StatusCode
 }
 
+// Status exports resp.Status
 func (resp *Response) Status() string {
 	return resp.response.Status
 }
