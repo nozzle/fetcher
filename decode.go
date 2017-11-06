@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-// Decoder is an interface for providing a custom decoder
+// DecodeFunc allows users to provide a custom decoder to use with Decode
 type DecodeFunc func(io.Reader, interface{}) error
 
 func jsonDecodeFunc(r io.Reader, v interface{}) error {

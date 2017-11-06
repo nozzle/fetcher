@@ -12,11 +12,20 @@ import (
 )
 
 const (
-	ContentTypeJSON   = "application/json"
-	ContentTypeGob    = "application/gob"
-	ContentTypeXML    = "application/xml"
+	// ContentTypeJSON = "application/json"
+	ContentTypeJSON = "application/json"
+
+	// ContentTypeGob = "application/gob"
+	ContentTypeGob = "application/gob"
+
+	// ContentTypeXML = "application/xml"
+	ContentTypeXML = "application/xml"
+
+	// ContentTypeHeader = "Content-Type"
 	ContentTypeHeader = "Content-Type"
-	AcceptHeader      = "Accept"
+
+	// AcceptHeader = "Accept"
+	AcceptHeader = "Accept"
 )
 
 // Request contains the data for a http.Request to be created

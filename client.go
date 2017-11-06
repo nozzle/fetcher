@@ -39,6 +39,7 @@ func NewClient(c context.Context, opts ...ClientOption) (*Client, error) {
 	return cl, nil
 }
 
+// Do uses the client receiver to execute the provided request
 func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	// if the context has been canceled or the deadline exceeded, don't start the request
 	if c.Err() != nil {
