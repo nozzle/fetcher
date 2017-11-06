@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 const (
@@ -32,17 +33,19 @@ type Request struct {
 	// append using RequestWithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
 
-	// response config
-	maxAttempts int
+	// retry config
+	maxAttempts     int
+	backoffStrategy backoffStrategy
 }
 
 // NewRequest returns a new Request with the given method/url and options executed
 func NewRequest(c context.Context, method, url string, opts ...RequestOption) (*Request, error) {
 	req := &Request{
-		method:      method,
-		url:         url,
-		maxAttempts: 1,
-		headers:     map[string]string{},
+		method:          method,
+		url:             url,
+		maxAttempts:     1,
+		headers:         map[string]string{},
+		backoffStrategy: defaultBackoffStrategy,
 	}
 	var err error
 
@@ -191,6 +194,76 @@ func RequestWithMaxAttempts(maxAttempts int) RequestOption {
 func RequestWithAfterDoFunc(afterDoFunc func(req *Request, resp *Response) error) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.afterDoFuncs = append(req.afterDoFuncs, afterDoFunc)
+		return nil
+	}
+}
+
+// RequestWithDefaultBackoff uses ExponentialJitterBackoff with min: 1s and max: 30s
+func RequestWithDefaultBackoff() RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = defaultBackoffStrategy
+		return nil
+	}
+}
+
+// RequestWithNoBackoff waits delay duration on each retry, regardless of attempt number
+func RequestWithNoBackoff(delay time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = noBackoff{
+			delay: delay,
+		}
+		return nil
+	}
+}
+
+// RequestWithLinearBackoff increases its delay by interval duration on each attempt
+func RequestWithLinearBackoff(interval, min, max time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = linearBackoff{
+			min:       min,
+			max:       max,
+			interval:  interval,
+			useJitter: false,
+		}
+		return nil
+	}
+}
+
+// RequestWithLinearJitterBackoff increases its delay by interval duration on each attempt,
+// with the each successive interval adjusted +/- 0-33%
+func RequestWithLinearJitterBackoff(interval, min, max time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = linearBackoff{
+			min:       min,
+			max:       max,
+			interval:  interval,
+			useJitter: true,
+		}
+		return nil
+	}
+}
+
+// RequestWithExponentialBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
+func RequestWithExponentialBackoff(min, max time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = exponentialBackoff{
+			min:       min,
+			max:       max,
+			useJitter: false,
+		}
+		return nil
+	}
+}
+
+// RequestWithExponentialJitterBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
+// with the each successive interval adjusted +/- 0-33%
+func RequestWithExponentialJitterBackoff(min, max time.Duration) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.backoffStrategy = exponentialBackoff{
+			min:       min,
+			max:       max,
+			useJitter: true,
+		}
 		return nil
 	}
 }
