@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"time"
 )
 
@@ -43,7 +44,8 @@ type Request struct {
 	afterDoFuncs []func(req *Request, resp *Response) error
 
 	// convenience option for context cancellation
-	deadline time.Time
+	deadline    time.Time
+	clientTrace *httptrace.ClientTrace
 
 	// retry config
 	maxAttempts     int
@@ -295,6 +297,14 @@ func RequestWithTimeout(timeout time.Duration) RequestOption {
 func RequestWithDeadline(deadline time.Time) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.deadline = deadline
+		return nil
+	}
+}
+
+// RequestWithClientTrace is a convenience function around httptrace.WithClientTrace
+func RequestWithClientTrace(clientTrace *httptrace.ClientTrace) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.clientTrace = clientTrace
 		return nil
 	}
 }
