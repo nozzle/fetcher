@@ -5,6 +5,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"time"
 )
 
@@ -57,6 +58,12 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	if cl.errorLogFunc != nil && req.errorLogFunc == nil {
 		req.errorLogFunc = cl.errorLogFunc
 		req.debugf("request using client errorLogFunc")
+	}
+
+	// inject user provided ClientTrace into the context
+	if req.clientTrace != nil {
+		req.debugf("injecting ClientTrace into context")
+		c = httptrace.WithClientTrace(c, req.clientTrace)
 	}
 
 	// set the context deadline if one was provided in the request options
