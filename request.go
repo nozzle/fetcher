@@ -41,6 +41,11 @@ type Request struct {
 	headers map[string]string
 	cookies []*http.Cookie
 
+	// BasicAuth options
+	optBasicAuth bool
+	username     string
+	password     string
+
 	// append using RequestWithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
 
@@ -88,6 +93,11 @@ func NewRequest(c context.Context, method, url string, opts ...RequestOption) (*
 	// add cookies
 	for _, cookie := range req.cookies {
 		req.request.AddCookie(cookie)
+	}
+
+	// set BasicAuth
+	if req.optBasicAuth {
+		req.request.SetBasicAuth(req.username, req.password)
 	}
 
 	req.request.Close = false
@@ -327,6 +337,16 @@ func RequestWithCookie(cookie *http.Cookie) RequestOption {
 func RequestWithCookies(cookies []*http.Cookie) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.cookies = append(req.cookies, cookies...)
+		return nil
+	}
+}
+
+// RequestWithBasicAuth sets HTTP Basic Authentication authorization header
+func RequestWithBasicAuth(username, password string) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.optBasicAuth = true
+		req.username = username
+		req.password = password
 		return nil
 	}
 }
