@@ -3,7 +3,6 @@ package fetcher
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -21,10 +20,6 @@ type Client struct {
 
 	errorLogFunc LogFunc
 	debugLogFunc LogFunc
-}
-
-func LintError() {
-	fmt.Printf("I'm going to error: %s", "no bueno")
 }
 
 // NewClient returns a new Client with the given options executed
