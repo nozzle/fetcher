@@ -16,6 +16,9 @@ type Client struct {
 
 	keepAlive        time.Duration
 	handshakeTimeout time.Duration
+
+	errorLogFunc LogFunc
+	debugLogFunc LogFunc
 }
 
 // NewClient returns a new Client with the given options executed
@@ -46,6 +49,15 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		return nil, c.Err()
 	}
 
+	// if per request loggers haven't been set, inherit from the client
+	if cl.debugLogFunc != nil && req.debugLogFunc == nil {
+		req.debugLogFunc = cl.debugLogFunc
+	}
+	if cl.errorLogFunc != nil && req.errorLogFunc == nil {
+		req.errorLogFunc = cl.errorLogFunc
+	}
+
+	// set the context deadline if one was provided in the request options
 	if !req.deadline.IsZero() {
 		var cancelFunc context.CancelFunc
 		c, cancelFunc = context.WithDeadline(c, req.deadline)
