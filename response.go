@@ -62,12 +62,15 @@ func (resp *Response) Decode(c context.Context, v interface{}, opts ...DecodeOpt
 func (resp *Response) detectDecoder() DecodeFunc {
 	switch resp.response.Header.Get(ContentTypeHeader) {
 	case ContentTypeJSON:
+		resp.request.debugf("json encoding detected")
 		resp.decodeFunc = jsonDecodeFunc
 
 	case ContentTypeGob:
+		resp.request.debugf("gob encoding detected")
 		resp.decodeFunc = gobDecodeFunc
 
 	case ContentTypeXML:
+		resp.request.debugf("xml encoding detected")
 		resp.decodeFunc = xmlDecodeFunc
 	}
 
@@ -92,7 +95,10 @@ func (resp *Response) Bytes() ([]byte, error) {
 
 // MustBytes reads the body into a buffer and then returns the bytes
 func (resp *Response) MustBytes() []byte {
-	bts, _ := resp.Bytes()
+	bts, err := resp.Bytes()
+	if err != nil {
+		resp.request.errorf("MustBytes error: %s", err.Error())
+	}
 	return bts
 }
 

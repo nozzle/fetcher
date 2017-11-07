@@ -52,13 +52,16 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	// if per request loggers haven't been set, inherit from the client
 	if cl.debugLogFunc != nil && req.debugLogFunc == nil {
 		req.debugLogFunc = cl.debugLogFunc
+		req.debugf("request using client debugLogFunc")
 	}
 	if cl.errorLogFunc != nil && req.errorLogFunc == nil {
 		req.errorLogFunc = cl.errorLogFunc
+		req.debugf("request using client errorLogFunc")
 	}
 
 	// set the context deadline if one was provided in the request options
 	if !req.deadline.IsZero() {
+		req.debugf("setting context deadline to %s", req.deadline)
 		var cancelFunc context.CancelFunc
 		c, cancelFunc = context.WithDeadline(c, req.deadline)
 		defer cancelFunc()
@@ -75,6 +78,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	resp := &Response{}
 	var err error
 	for i := 1; i <= req.maxAttempts; i++ {
+		req.debugf("request attempt #%d", i)
 		resp.response, err = cl.client.Do(reqc)
 		if err != nil {
 			return nil, err
@@ -84,24 +88,31 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		// NOTE: the error returned from cl.client.Do(reqc) only contains scenarios regarding
 		// a bad request given, or a response with Location header missing or bad
 		if resp.response.StatusCode < 500 {
+			req.debugf("status code %d < 500, exiting retry loop", resp.response.StatusCode)
 			break
 		}
 
 		// break out of the retry loop if this is the last attempt, so we don't close the response body
 		// or sleep unnecessarily
 		if i == req.maxAttempts {
+			req.debugf("max attempts (%d) reached, exiting retry loop", req.maxAttempts)
 			break
 		}
 
 		// close the response body before we lose our reference to it
 		if err = resp.response.Body.Close(); err != nil {
+			req.errorf(err.Error())
 			return nil, err
 		}
 
 		// wait before retrying, returning early if the context is cancelled
+		delay := req.backoffStrategy.waitDuration(i)
+		req.debugf("waiting %s before next retry", delay)
+
 		select {
-		case <-time.After(req.backoffStrategy.waitDuration(i)):
+		case <-time.After(delay):
 		case <-c.Done():
+			req.debugf("context cancelled during backoff delay")
 			return nil, c.Err()
 		}
 	}
