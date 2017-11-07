@@ -91,6 +91,11 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 			return nil, err
 		}
 
+		// if we used a multipart form, we need to check for an error from the goroutine
+		if i == 1 && req.optMultiPartForm && req.multiPartFormErr != nil {
+			return nil, err
+		}
+
 		// further attempts will be made only on 500+ status codes
 		// NOTE: the error returned from cl.client.Do(reqc) only contains scenarios regarding
 		// a bad request given, or a response with Location header missing or bad
