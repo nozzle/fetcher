@@ -10,6 +10,7 @@ import (
 
 var _ fetcher.Fetcher = (*Client)(nil)
 
+// Client is used to mock the fetcher.Client
 type Client struct {
 	expectedRequests []*ExpectedRequest
 
@@ -36,6 +37,8 @@ func NewClient(c context.Context, opts ...ClientOption) (*Client, error) {
 	return cl, nil
 }
 
+// Do mocks the execution of a request by matching it up with an expectedRequest
+// If no matching expectedRequests are found, fetchermock will exit with errors
 func (cl *Client) Do(c context.Context, req *fetcher.Request) (*fetcher.Response, error) {
 	// if the context has been canceled or the deadline exceeded, don't start the request
 	if c.Err() != nil {
@@ -80,6 +83,7 @@ func (cl *Client) Do(c context.Context, req *fetcher.Request) (*fetcher.Response
 	return cl.expectedRequests[metIdx].response, nil
 }
 
+// Get is a helper func for Do, setting the Method internally
 func (cl *Client) Get(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodGet, url, opts...)
 	if err != nil {
@@ -88,6 +92,7 @@ func (cl *Client) Get(c context.Context, url string, opts ...fetcher.RequestOpti
 	return cl.Do(c, req)
 }
 
+// Head is a helper func for Do, setting the Method internally
 func (cl *Client) Head(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodHead, url, opts...)
 	if err != nil {
@@ -96,6 +101,7 @@ func (cl *Client) Head(c context.Context, url string, opts ...fetcher.RequestOpt
 	return cl.Do(c, req)
 }
 
+// Post is a helper func for Do, setting the Method internally
 func (cl *Client) Post(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodPost, url, opts...)
 	if err != nil {
@@ -104,6 +110,7 @@ func (cl *Client) Post(c context.Context, url string, opts ...fetcher.RequestOpt
 	return cl.Do(c, req)
 }
 
+// Put is a helper func for Do, setting the Method internally
 func (cl *Client) Put(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodPut, url, opts...)
 	if err != nil {
@@ -112,6 +119,7 @@ func (cl *Client) Put(c context.Context, url string, opts ...fetcher.RequestOpti
 	return cl.Do(c, req)
 }
 
+// Patch is a helper func for Do, setting the Method internally
 func (cl *Client) Patch(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodPatch, url, opts...)
 	if err != nil {
@@ -120,6 +128,7 @@ func (cl *Client) Patch(c context.Context, url string, opts ...fetcher.RequestOp
 	return cl.Do(c, req)
 }
 
+// Delete is a helper func for Do, setting the Method internally
 func (cl *Client) Delete(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
 	req, err := fetcher.NewRequest(c, http.MethodDelete, url, opts...)
 	if err != nil {
@@ -128,6 +137,7 @@ func (cl *Client) Delete(c context.Context, url string, opts ...fetcher.RequestO
 	return cl.Do(c, req)
 }
 
+// UnmetExpectations returns the slice of ExpectedRequests that were not met in execution
 func (cl *Client) UnmetExpectations() []*ExpectedRequest {
 	unmet := make([]*ExpectedRequest, 0, len(cl.expectedRequests)-cl.metCount())
 	for i := range cl.expectedRequests {
@@ -138,6 +148,7 @@ func (cl *Client) UnmetExpectations() []*ExpectedRequest {
 	return unmet
 }
 
+// metCount returns the number of expectedReqeusts that have wasMet=true
 func (cl *Client) metCount() int {
 	metCount := 0
 	for i := range cl.expectedRequests {
