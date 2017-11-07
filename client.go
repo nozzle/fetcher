@@ -24,7 +24,7 @@ type Client struct {
 }
 
 func LintError() {
-	fmt.Printf("I'm going to error: %d", "no bueno")
+	fmt.Printf("I'm going to error: %s", "no bueno")
 }
 
 // NewClient returns a new Client with the given options executed
