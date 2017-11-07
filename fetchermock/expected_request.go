@@ -39,7 +39,7 @@ func (cl *Client) ExpectRequest(c context.Context, method, url string, opts ...E
 	}
 
 	// create the request that will be matched with the executed request
-	expReq.request, err = fetcher.NewRequest(c, method, url, expReq.requestOptions...)
+	expReq.request, err = cl.NewRequest(c, method, url, expReq.requestOptions...)
 	if err != nil {
 		return err
 	}

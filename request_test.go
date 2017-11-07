@@ -17,12 +17,14 @@ func TestNewRequest(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
+		client  *Client
 		args    args
 		want    *Request
 		wantErr bool
 	}{
 		{
 			"no options - GET with headers",
+			&Client{},
 			args{
 				c:      ctx,
 				method: http.MethodGet,
@@ -39,6 +41,7 @@ func TestNewRequest(t *testing.T) {
 		},
 		{
 			"erroring option - GET",
+			&Client{},
 			args{
 				c:      ctx,
 				method: http.MethodGet,
@@ -51,7 +54,7 @@ func TestNewRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewRequest(tt.args.c, tt.args.method, tt.args.url, tt.args.opts...)
+			got, err := tt.client.NewRequest(tt.args.c, tt.args.method, tt.args.url, tt.args.opts...)
 			switch {
 			case tt.wantErr && err != nil:
 				return
