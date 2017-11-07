@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
+	"os"
 	"time"
 )
 
@@ -45,6 +47,10 @@ type Request struct {
 	optBasicAuth bool
 	username     string
 	password     string
+
+	// multipart form details
+	optMultiPartForm bool
+	multiPartFormErr error
 
 	// append using RequestWithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
@@ -185,6 +191,71 @@ func RequestWithBytesPayload(payload []byte) RequestOption {
 		req.payload = bytes.NewReader(payload)
 		return nil
 	}
+}
+
+// RequestWithReaderMultipartPayload takes a filepath, opens the file and adds it to the request
+func RequestWithReaderMultipartPayload(filename string, data io.Reader) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.multipartPayload("file", filename, data)
+		return nil
+	}
+}
+
+// RequestWithFilepathMultipartPayload takes a filepath, opens the file and adds it to the request
+func RequestWithFilepathMultipartPayload(filepath string) RequestOption {
+	return func(c context.Context, req *Request) error {
+		f, err := os.Open(filepath)
+		if err != nil {
+			return err
+		}
+
+		fi, err := f.Stat()
+		if err != nil {
+			return err
+		}
+
+		req.multipartPayload("file", fi.Name(), f)
+		return nil
+	}
+}
+
+// TODO: this still buffers internally- see https://groups.google.com/forum/#!topic/golang-nuts/Zjg5l4nKcQ0
+func (req *Request) multipartPayload(fieldname, filename string, data io.Reader) {
+	// create a pipe to connect the data reader to the request payload
+	pipeReader, pipeWriter := io.Pipe()
+	mpw := multipart.NewWriter(pipeWriter)
+
+	// set multipart request options
+	req.optMultiPartForm = true
+	req.payload = pipeReader
+	req.headers["Content-Type"] = mpw.FormDataContentType()
+
+	go func() {
+		var err error
+		var part io.Writer
+		defer pipeWriter.Close()
+		if closer, ok := data.(io.Closer); ok {
+			defer closer.Close()
+		}
+
+		if part, err = mpw.CreateFormFile(fieldname, filename); err != nil {
+			req.multiPartFormErr = err
+			req.errorf("mpw.CreateFormFile failed: %s", err.Error())
+			return
+		}
+
+		if _, err = io.Copy(part, data); err != nil {
+			req.multiPartFormErr = err
+			req.errorf("io.Copy failed: %s", err.Error())
+			return
+		}
+
+		if err = mpw.Close(); err != nil {
+			req.multiPartFormErr = err
+			req.errorf("mpw.Close failed: %s", err.Error())
+			return
+		}
+	}()
 }
 
 // RequestWithReaderPayload sets the given payload for the Request
