@@ -39,6 +39,7 @@ type Request struct {
 	url     string
 	payload io.Reader
 	headers map[string]string
+	cookies []*http.Cookie
 
 	// append using RequestWithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
@@ -82,6 +83,11 @@ func NewRequest(c context.Context, method, url string, opts ...RequestOption) (*
 	// add the headers
 	for key, value := range req.headers {
 		req.request.Header.Add(key, value)
+	}
+
+	// add cookies
+	for _, cookie := range req.cookies {
+		req.request.AddCookie(cookie)
 	}
 
 	req.request.Close = false
@@ -305,6 +311,22 @@ func RequestWithDeadline(deadline time.Time) RequestOption {
 func RequestWithClientTrace(clientTrace *httptrace.ClientTrace) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.clientTrace = clientTrace
+		return nil
+	}
+}
+
+// RequestWithCookie adds a single cookie to the request
+func RequestWithCookie(cookie *http.Cookie) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.cookies = append(req.cookies, cookie)
+		return nil
+	}
+}
+
+// RequestWithCookies adds a slice of cookies to the request
+func RequestWithCookies(cookies []*http.Cookie) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.cookies = append(req.cookies, cookies...)
 		return nil
 	}
 }
