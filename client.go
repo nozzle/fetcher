@@ -143,7 +143,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 
 // Get is a helper func for Do, setting the Method internally
 func (cl *Client) Get(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodGet, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodGet, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (cl *Client) Get(c context.Context, url string, opts ...RequestOption) (*Re
 
 // Head is a helper func for Do, setting the Method internally
 func (cl *Client) Head(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodHead, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodHead, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func (cl *Client) Head(c context.Context, url string, opts ...RequestOption) (*R
 
 // Post is a helper func for Do, setting the Method internally
 func (cl *Client) Post(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodPost, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodPost, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func (cl *Client) Post(c context.Context, url string, opts ...RequestOption) (*R
 
 // Put is a helper func for Do, setting the Method internally
 func (cl *Client) Put(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodPut, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodPut, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (cl *Client) Put(c context.Context, url string, opts ...RequestOption) (*Re
 
 // Patch is a helper func for Do, setting the Method internally
 func (cl *Client) Patch(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodPatch, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodPatch, url, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (cl *Client) Patch(c context.Context, url string, opts ...RequestOption) (*
 
 // Delete is a helper func for Do, setting the Method internally
 func (cl *Client) Delete(c context.Context, url string, opts ...RequestOption) (*Response, error) {
-	req, err := NewRequest(c, http.MethodDelete, url, opts...)
+	req, err := cl.NewRequest(c, http.MethodDelete, url, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -194,7 +194,7 @@ func TestEndToEndWithObject(t *testing.T) {
 				return
 			}
 
-			req, err := NewRequest(tt.c, tt.method, ts.URL, tt.requestOptions...)
+			req, err := cl.NewRequest(tt.c, tt.method, ts.URL, tt.requestOptions...)
 			if err != nil {
 				t.Errorf("NewRequest failed: %v", err)
 				return

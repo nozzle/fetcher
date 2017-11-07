@@ -68,7 +68,7 @@ type Request struct {
 }
 
 // NewRequest returns a new Request with the given method/url and options executed
-func NewRequest(c context.Context, method, url string, opts ...RequestOption) (*Request, error) {
+func (cl *Client) NewRequest(c context.Context, method, url string, opts ...RequestOption) (*Request, error) {
 	req := &Request{
 		method:          method,
 		url:             url,

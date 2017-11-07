@@ -12,7 +12,9 @@ var _ fetcher.Fetcher = (*Client)(nil)
 
 // Client is used to mock the fetcher.Client
 type Client struct {
-	expectedRequests []*ExpectedRequest
+	fetcherClient        *fetcher.Client
+	fetcherClientOptions []fetcher.ClientOption
+	expectedRequests     []*ExpectedRequest
 
 	withExpectationsInOrder bool
 	expectationsMet         bool
@@ -32,6 +34,11 @@ func NewClient(c context.Context, opts ...ClientOption) (*Client, error) {
 		if err = opt(c, cl); err != nil {
 			return nil, err
 		}
+	}
+
+	cl.fetcherClient, err = fetcher.NewClient(c, cl.fetcherClientOptions...)
+	if err != nil {
+		return nil, err
 	}
 
 	return cl, nil
@@ -83,60 +90,6 @@ func (cl *Client) Do(c context.Context, req *fetcher.Request) (*fetcher.Response
 	return cl.expectedRequests[metIdx].response, nil
 }
 
-// Get is a helper func for Do, setting the Method internally
-func (cl *Client) Get(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodGet, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
-// Head is a helper func for Do, setting the Method internally
-func (cl *Client) Head(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodHead, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
-// Post is a helper func for Do, setting the Method internally
-func (cl *Client) Post(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodPost, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
-// Put is a helper func for Do, setting the Method internally
-func (cl *Client) Put(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodPut, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
-// Patch is a helper func for Do, setting the Method internally
-func (cl *Client) Patch(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodPatch, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
-// Delete is a helper func for Do, setting the Method internally
-func (cl *Client) Delete(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
-	req, err := fetcher.NewRequest(c, http.MethodDelete, url, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return cl.Do(c, req)
-}
-
 // UnmetExpectations returns the slice of ExpectedRequests that were not met in execution
 func (cl *Client) UnmetExpectations() []*ExpectedRequest {
 	unmet := make([]*ExpectedRequest, 0, len(cl.expectedRequests)-cl.metCount())
@@ -168,4 +121,71 @@ func ClientWithExpectationsInOrder(inOrder bool) ClientOption {
 		cl.withExpectationsInOrder = inOrder
 		return nil
 	}
+}
+
+// ClientWithFetcherClientOptions sets the cl.withFetcherClientOptions value
+func ClientWithFetcherClientOptions(opts ...fetcher.ClientOption) ClientOption {
+	return func(c context.Context, cl *Client) error {
+		cl.fetcherClientOptions = opts
+		return nil
+	}
+}
+
+// Get is a helper func for Do, setting the Method internally
+func (cl *Client) Get(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodGet, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// Head is a helper func for Do, setting the Method internally
+func (cl *Client) Head(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodHead, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// Post is a helper func for Do, setting the Method internally
+func (cl *Client) Post(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodPost, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// Put is a helper func for Do, setting the Method internally
+func (cl *Client) Put(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodPut, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// Patch is a helper func for Do, setting the Method internally
+func (cl *Client) Patch(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodPatch, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// Delete is a helper func for Do, setting the Method internally
+func (cl *Client) Delete(c context.Context, url string, opts ...fetcher.RequestOption) (*fetcher.Response, error) {
+	req, err := cl.NewRequest(c, http.MethodDelete, url, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return cl.Do(c, req)
+}
+
+// NewRequest returns a new Request with the given method/url and options executed
+func (cl *Client) NewRequest(c context.Context, method, url string, opts ...fetcher.RequestOption) (*fetcher.Request, error) {
+	return cl.fetcherClient.NewRequest(c, method, url, opts...)
 }
