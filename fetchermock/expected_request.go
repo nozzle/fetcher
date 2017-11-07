@@ -10,7 +10,7 @@ import (
 	"github.com/nozzle/fetcher"
 )
 
-// ExpectedRequest
+// ExpectedRequest contains the info for a Request to expect in execution
 type ExpectedRequest struct {
 	requestOptions []fetcher.RequestOption
 	request        *fetcher.Request
@@ -45,7 +45,7 @@ func (cl *Client) ExpectRequest(c context.Context, method, url string, opts ...E
 	}
 
 	// create the expected response
-	expReq.response = fetcher.NewResponse(c, expReq.request, mockHttpResponse(c, expReq))
+	expReq.response = fetcher.NewResponse(c, expReq.request, mockHTTPResponse(c, expReq))
 
 	// add the ExpectedRequest to the ExpectedRequests for the Client
 	cl.expectedRequests = append(cl.expectedRequests, expReq)
@@ -56,6 +56,7 @@ func (cl *Client) ExpectRequest(c context.Context, method, url string, opts ...E
 // ExpectedRequestOption is a func to configure optional settings for an ExpectedRequest
 type ExpectedRequestOption func(c context.Context, expReq *ExpectedRequest) error
 
+// WithRequestOptions adds all the given fetcher.RequestOptions to the requestOptions in the ExpectedRequest
 func WithRequestOptions(opts ...fetcher.RequestOption) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.requestOptions = opts
@@ -63,6 +64,7 @@ func WithRequestOptions(opts ...fetcher.RequestOption) ExpectedRequestOption {
 	}
 }
 
+// WithResponseStatusCode sets the responseStatusCode in the ExpectedRequest
 func WithResponseStatusCode(code int) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.responseStatusCode = code
@@ -70,6 +72,7 @@ func WithResponseStatusCode(code int) ExpectedRequestOption {
 	}
 }
 
+// WithResponseStatus sets the responseStatus in the ExpectedRequest
 func WithResponseStatus(status string) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.responseStatus = status
@@ -77,6 +80,7 @@ func WithResponseStatus(status string) ExpectedRequestOption {
 	}
 }
 
+// WithResponseBodyBytes sets the responseBodyBytes in the ExpectedRequest
 func WithResponseBodyBytes(b []byte) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.responseBodyReader = bytes.NewReader(b)
@@ -84,6 +88,7 @@ func WithResponseBodyBytes(b []byte) ExpectedRequestOption {
 	}
 }
 
+// WithResponseBodyReader sets the responseBodyReader in the ExpectedRequest
 func WithResponseBodyReader(r io.Reader) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.responseBodyReader = r
@@ -91,6 +96,7 @@ func WithResponseBodyReader(r io.Reader) ExpectedRequestOption {
 	}
 }
 
+// WithResponseHeader sets the key/value in the responseHeader in the ExpectedRequest
 func WithResponseHeader(key, value string) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.responseHeaders[key] = value
@@ -98,6 +104,7 @@ func WithResponseHeader(key, value string) ExpectedRequestOption {
 	}
 }
 
+// WithResponseError sets the ResponseError in the ExpectedRequest
 func WithResponseError(err error) ExpectedRequestOption {
 	return func(c context.Context, expReq *ExpectedRequest) error {
 		expReq.err = err
@@ -105,7 +112,7 @@ func WithResponseError(err error) ExpectedRequestOption {
 	}
 }
 
-func mockHttpResponse(c context.Context, expReq *ExpectedRequest) *http.Response {
+func mockHTTPResponse(c context.Context, expReq *ExpectedRequest) *http.Response {
 	resp := &http.Response{Header: http.Header(map[string][]string{})}
 	resp.Body = ioutil.NopCloser(expReq.responseBodyReader)
 	for key, value := range expReq.responseHeaders {
