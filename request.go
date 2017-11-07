@@ -48,6 +48,9 @@ type Request struct {
 	// retry config
 	maxAttempts     int
 	backoffStrategy backoffStrategy
+
+	errorLogFunc LogFunc
+	debugLogFunc LogFunc
 }
 
 // NewRequest returns a new Request with the given method/url and options executed
