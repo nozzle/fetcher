@@ -220,3 +220,174 @@ func TestEndToEndWithObject(t *testing.T) {
 		})
 	}
 }
+
+func TestEndToEndGetPostPutPatchWithObject(t *testing.T) {
+	tests := []struct {
+		name           string
+		c              context.Context
+		clientOptions  []ClientOption
+		method         string
+		requestOptions []RequestOption
+		serverData     *serverData
+		decodeOptions  []DecodeOption
+		want           testObject
+	}{
+		{
+			"cl.Get",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodGet,
+			[]RequestOption{},
+			&serverData{
+				headers:    map[string]string{ContentTypeHeader: ContentTypeJSON},
+				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
+				statusCode: 200,
+			},
+			[]DecodeOption{DecodeWithJSON()},
+			testObject{URL: "https://nozzle.io/", Count: 30},
+		},
+		{
+			"cl.Post",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodPost,
+			[]RequestOption{},
+			&serverData{
+				headers:    map[string]string{ContentTypeHeader: ContentTypeJSON},
+				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
+				statusCode: 200,
+			},
+			[]DecodeOption{DecodeWithJSON()},
+			testObject{URL: "https://nozzle.io/", Count: 30},
+		},
+		{
+			"cl.Put",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodPut,
+			[]RequestOption{},
+			&serverData{
+				headers:    map[string]string{ContentTypeHeader: ContentTypeJSON},
+				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
+				statusCode: 200,
+			},
+			[]DecodeOption{DecodeWithJSON()},
+			testObject{URL: "https://nozzle.io/", Count: 30},
+		},
+		{
+			"cl.Patch",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodPatch,
+			[]RequestOption{},
+			&serverData{
+				headers:    map[string]string{ContentTypeHeader: ContentTypeJSON},
+				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
+				statusCode: 200,
+			},
+			[]DecodeOption{DecodeWithJSON()},
+			testObject{URL: "https://nozzle.io/", Count: 30},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := testServerHelper(t, tt.serverData)
+			defer ts.Close()
+
+			cl, err := NewClient(tt.c, tt.clientOptions...)
+			if err != nil {
+				t.Errorf("NewClient failed: %v", err)
+				return
+			}
+
+			var resp *Response
+			switch tt.method {
+			case http.MethodGet:
+				resp, err = cl.Get(tt.c, ts.URL, tt.requestOptions...)
+			case http.MethodPost:
+				resp, err = cl.Post(tt.c, ts.URL, tt.requestOptions...)
+			case http.MethodPut:
+				resp, err = cl.Put(tt.c, ts.URL, tt.requestOptions...)
+			case http.MethodPatch:
+				resp, err = cl.Patch(tt.c, ts.URL, tt.requestOptions...)
+			}
+			if err != nil {
+				t.Errorf("cl.Do failed: %v", err)
+				return
+			}
+
+			got := testObject{}
+			err = resp.Decode(tt.c, &got, tt.decodeOptions...)
+			if err != nil {
+				t.Errorf("resp.Decode failed: %v", err)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %v, want %v", got, tt.want)
+				return
+			}
+		})
+	}
+}
+
+func TestEndToEndHeadDelete(t *testing.T) {
+	tests := []struct {
+		name           string
+		c              context.Context
+		clientOptions  []ClientOption
+		method         string
+		requestOptions []RequestOption
+		serverData     *serverData
+	}{
+		{
+			"cl.Head",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodHead,
+			[]RequestOption{},
+			&serverData{
+				statusCode: 200,
+			},
+		},
+		{
+			"cl.Delete",
+			context.Background(),
+			[]ClientOption{},
+			http.MethodDelete,
+			[]RequestOption{},
+			&serverData{
+				statusCode: 200,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ts := testServerHelper(t, tt.serverData)
+			defer ts.Close()
+
+			cl, err := NewClient(tt.c, tt.clientOptions...)
+			if err != nil {
+				t.Errorf("NewClient failed: %v", err)
+				return
+			}
+
+			var resp *Response
+			switch tt.method {
+			case http.MethodHead:
+				resp, err = cl.Head(tt.c, ts.URL, tt.requestOptions...)
+			case http.MethodDelete:
+				resp, err = cl.Delete(tt.c, ts.URL, tt.requestOptions...)
+			}
+			if err != nil {
+				t.Errorf("cl.Do failed: %v", err)
+				return
+			}
+
+			if resp.StatusCode() != tt.serverData.statusCode {
+				t.Errorf("resp.Decode failed: %v", err)
+				return
+			}
+		})
+	}
+}
