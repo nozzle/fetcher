@@ -82,11 +82,11 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		defer putBuffer(buf)
 	}
 
-	resp := &Response{}
+	var httpResp *http.Response
 	var err error
 	for i := 1; i <= req.maxAttempts; i++ {
 		req.debugf("request attempt #%d", i)
-		resp.response, err = cl.client.Do(reqc)
+		httpResp, err = cl.client.Do(reqc)
 		if err != nil {
 			return nil, err
 		}
@@ -99,8 +99,8 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		// further attempts will be made only on 500+ status codes
 		// NOTE: the error returned from cl.client.Do(reqc) only contains scenarios regarding
 		// a bad request given, or a response with Location header missing or bad
-		if resp.response.StatusCode < 500 {
-			req.debugf("status code %d < 500, exiting retry loop", resp.response.StatusCode)
+		if httpResp.StatusCode < 500 {
+			req.debugf("status code %d < 500, exiting retry loop", httpResp.StatusCode)
 			break
 		}
 
@@ -112,7 +112,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		}
 
 		// close the response body before we lose our reference to it
-		if err = resp.response.Body.Close(); err != nil {
+		if err = httpResp.Body.Close(); err != nil {
 			req.errorf(err.Error())
 			return nil, err
 		}
@@ -128,6 +128,8 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 			return nil, c.Err()
 		}
 	}
+
+	resp := NewResponse(c, req, httpResp)
 
 	// execute all afterDoFuncs
 	for _, afterDo := range req.afterDoFuncs {
