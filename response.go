@@ -63,15 +63,15 @@ func (resp *Response) detectDecoder() DecodeFunc {
 	switch resp.response.Header.Get(ContentTypeHeader) {
 	case ContentTypeJSON:
 		resp.request.debugf("json encoding detected")
-		resp.decodeFunc = jsonDecodeFunc
+		return jsonDecodeFunc
 
 	case ContentTypeGob:
 		resp.request.debugf("gob encoding detected")
-		resp.decodeFunc = gobDecodeFunc
+		return gobDecodeFunc
 
 	case ContentTypeXML:
 		resp.request.debugf("xml encoding detected")
-		resp.decodeFunc = xmlDecodeFunc
+		return xmlDecodeFunc
 	}
 
 	return nil
