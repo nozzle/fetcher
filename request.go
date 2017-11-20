@@ -52,7 +52,7 @@ type Request struct {
 	optMultiPartForm bool
 	multiPartFormErr error
 
-	// append using RequestWithAfterDoFunc option
+	// append using WithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
 
 	// convenience option for context cancellation
@@ -154,9 +154,9 @@ func (req *Request) Equal(reqComp *Request) (bool, string) {
 // RequestOption is a func to configure optional Request settings
 type RequestOption func(c context.Context, req *Request) error
 
-// RequestWithJSONPayload json marshals the payload for the Request
+// WithJSONPayload json marshals the payload for the Request
 // and sets the content-type header to application/json
-func RequestWithJSONPayload(payload interface{}) RequestOption {
+func WithJSONPayload(payload interface{}) RequestOption {
 	return func(c context.Context, req *Request) error {
 		if payload == nil {
 			return nil
@@ -172,9 +172,9 @@ func RequestWithJSONPayload(payload interface{}) RequestOption {
 	}
 }
 
-// RequestWithGobPayload gob encodes the payload for the Request
+// WithGobPayload gob encodes the payload for the Request
 // and sets the content-type header to application/gob
-func RequestWithGobPayload(payload interface{}) RequestOption {
+func WithGobPayload(payload interface{}) RequestOption {
 	return func(c context.Context, req *Request) error {
 		if payload == nil {
 			return nil
@@ -188,24 +188,24 @@ func RequestWithGobPayload(payload interface{}) RequestOption {
 	}
 }
 
-// RequestWithBytesPayload sets the given payload for the Request
-func RequestWithBytesPayload(payload []byte) RequestOption {
+// WithBytesPayload sets the given payload for the Request
+func WithBytesPayload(payload []byte) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.payload = bytes.NewReader(payload)
 		return nil
 	}
 }
 
-// RequestWithReaderMultipartPayload takes a filepath, opens the file and adds it to the request
-func RequestWithReaderMultipartPayload(filename string, data io.Reader) RequestOption {
+// WithReaderMultipartPayload takes a filepath, opens the file and adds it to the request
+func WithReaderMultipartPayload(filename string, data io.Reader) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.multipartPayload("file", filename, data)
 		return nil
 	}
 }
 
-// RequestWithFilepathMultipartPayload takes a filepath, opens the file and adds it to the request
-func RequestWithFilepathMultipartPayload(filepath string) RequestOption {
+// WithFilepathMultipartPayload takes a filepath, opens the file and adds it to the request
+func WithFilepathMultipartPayload(filepath string) RequestOption {
 	return func(c context.Context, req *Request) error {
 		f, err := os.Open(filepath)
 		if err != nil {
@@ -261,33 +261,33 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 	}()
 }
 
-// RequestWithReaderPayload sets the given payload for the Request
-func RequestWithReaderPayload(payload io.Reader) RequestOption {
+// WithReaderPayload sets the given payload for the Request
+func WithReaderPayload(payload io.Reader) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.payload = payload
 		return nil
 	}
 }
 
-// RequestWithHeader adds the given key/value combo to the Request headers
-func RequestWithHeader(key, value string) RequestOption {
+// WithHeader adds the given key/value combo to the Request headers
+func WithHeader(key, value string) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.headers[key] = value
 		return nil
 	}
 }
 
-// RequestWithAcceptJSONHeader adds Accept: application/json to the Request headers
-func RequestWithAcceptJSONHeader() RequestOption {
+// WithAcceptJSONHeader adds Accept: application/json to the Request headers
+func WithAcceptJSONHeader() RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.headers[AcceptHeader] = ContentTypeJSON
 		return nil
 	}
 }
 
-// RequestWithMaxAttempts sets the max number of times to attempt the Request on 5xx status code
+// WithMaxAttempts sets the max number of times to attempt the Request on 5xx status code
 // must be at least 1
-func RequestWithMaxAttempts(maxAttempts int) RequestOption {
+func WithMaxAttempts(maxAttempts int) RequestOption {
 	return func(c context.Context, req *Request) error {
 		if maxAttempts < 1 {
 			maxAttempts = 1
@@ -297,24 +297,24 @@ func RequestWithMaxAttempts(maxAttempts int) RequestOption {
 	}
 }
 
-// RequestWithAfterDoFunc allows user-defined functions to access Request and Response (read-only)
-func RequestWithAfterDoFunc(afterDoFunc func(req *Request, resp *Response) error) RequestOption {
+// WithAfterDoFunc allows user-defined functions to access Request and Response (read-only)
+func WithAfterDoFunc(afterDoFunc func(req *Request, resp *Response) error) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.afterDoFuncs = append(req.afterDoFuncs, afterDoFunc)
 		return nil
 	}
 }
 
-// RequestWithDefaultBackoff uses ExponentialJitterBackoff with min: 1s and max: 30s
-func RequestWithDefaultBackoff() RequestOption {
+// WithDefaultBackoff uses ExponentialJitterBackoff with min: 1s and max: 30s
+func WithDefaultBackoff() RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = defaultBackoffStrategy
 		return nil
 	}
 }
 
-// RequestWithNoBackoff waits delay duration on each retry, regardless of attempt number
-func RequestWithNoBackoff(delay time.Duration) RequestOption {
+// WithNoBackoff waits delay duration on each retry, regardless of attempt number
+func WithNoBackoff(delay time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = noBackoff{
 			delay: delay,
@@ -323,8 +323,8 @@ func RequestWithNoBackoff(delay time.Duration) RequestOption {
 	}
 }
 
-// RequestWithLinearBackoff increases its delay by interval duration on each attempt
-func RequestWithLinearBackoff(interval, min, max time.Duration) RequestOption {
+// WithLinearBackoff increases its delay by interval duration on each attempt
+func WithLinearBackoff(interval, min, max time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = linearBackoff{
 			min:       min,
@@ -336,9 +336,9 @@ func RequestWithLinearBackoff(interval, min, max time.Duration) RequestOption {
 	}
 }
 
-// RequestWithLinearJitterBackoff increases its delay by interval duration on each attempt,
+// WithLinearJitterBackoff increases its delay by interval duration on each attempt,
 // with the each successive interval adjusted +/- 0-33%
-func RequestWithLinearJitterBackoff(interval, min, max time.Duration) RequestOption {
+func WithLinearJitterBackoff(interval, min, max time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = linearBackoff{
 			min:       min,
@@ -350,8 +350,8 @@ func RequestWithLinearJitterBackoff(interval, min, max time.Duration) RequestOpt
 	}
 }
 
-// RequestWithExponentialBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
-func RequestWithExponentialBackoff(min, max time.Duration) RequestOption {
+// WithExponentialBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
+func WithExponentialBackoff(min, max time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = exponentialBackoff{
 			min:       min,
@@ -362,9 +362,9 @@ func RequestWithExponentialBackoff(min, max time.Duration) RequestOption {
 	}
 }
 
-// RequestWithExponentialJitterBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
+// WithExponentialJitterBackoff multiplies the min duration by 2^(attempt number - 1), doubling the delay on each attempt
 // with the each successive interval adjusted +/- 0-33%
-func RequestWithExponentialJitterBackoff(min, max time.Duration) RequestOption {
+func WithExponentialJitterBackoff(min, max time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.backoffStrategy = exponentialBackoff{
 			min:       min,
@@ -375,48 +375,48 @@ func RequestWithExponentialJitterBackoff(min, max time.Duration) RequestOption {
 	}
 }
 
-// RequestWithTimeout is a convenience function around context.WithTimeout
-func RequestWithTimeout(timeout time.Duration) RequestOption {
+// WithTimeout is a convenience function around context.WithTimeout
+func WithTimeout(timeout time.Duration) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.deadline = time.Now().Add(timeout)
 		return nil
 	}
 }
 
-// RequestWithDeadline is a convenience function around context.WithDeadline
-func RequestWithDeadline(deadline time.Time) RequestOption {
+// WithDeadline is a convenience function around context.WithDeadline
+func WithDeadline(deadline time.Time) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.deadline = deadline
 		return nil
 	}
 }
 
-// RequestWithClientTrace is a convenience function around httptrace.WithClientTrace
-func RequestWithClientTrace(clientTrace *httptrace.ClientTrace) RequestOption {
+// WithClientTrace is a convenience function around httptrace.WithClientTrace
+func WithClientTrace(clientTrace *httptrace.ClientTrace) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.clientTrace = clientTrace
 		return nil
 	}
 }
 
-// RequestWithCookie adds a single cookie to the request
-func RequestWithCookie(cookie *http.Cookie) RequestOption {
+// WithCookie adds a single cookie to the request
+func WithCookie(cookie *http.Cookie) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.cookies = append(req.cookies, cookie)
 		return nil
 	}
 }
 
-// RequestWithCookies adds a slice of cookies to the request
-func RequestWithCookies(cookies []*http.Cookie) RequestOption {
+// WithCookies adds a slice of cookies to the request
+func WithCookies(cookies []*http.Cookie) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.cookies = append(req.cookies, cookies...)
 		return nil
 	}
 }
 
-// RequestWithBasicAuth sets HTTP Basic Authentication authorization header
-func RequestWithBasicAuth(username, password string) RequestOption {
+// WithBasicAuth sets HTTP Basic Authentication authorization header
+func WithBasicAuth(username, password string) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.optBasicAuth = true
 		req.username = username

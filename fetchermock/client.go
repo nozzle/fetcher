@@ -115,16 +115,16 @@ func (cl *Client) metCount() int {
 // ClientOption is a func to configure optional Client settings
 type ClientOption func(c context.Context, cl *Client) error
 
-// ClientWithExpectationsInOrder sets the cl.withExpectationsInOrder value
-func ClientWithExpectationsInOrder(inOrder bool) ClientOption {
+// WithExpectationsInOrder sets the cl.withExpectationsInOrder value
+func WithExpectationsInOrder(inOrder bool) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.withExpectationsInOrder = inOrder
 		return nil
 	}
 }
 
-// ClientWithFetcherClientOptions sets the cl.withFetcherClientOptions value
-func ClientWithFetcherClientOptions(opts ...fetcher.ClientOption) ClientOption {
+// WithFetcherClientOptions sets the cl.withFetcherClientOptions value
+func WithFetcherClientOptions(opts ...fetcher.ClientOption) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.fetcherClientOptions = opts
 		return nil

@@ -26,34 +26,34 @@ func xmlDecodeFunc(r io.Reader, v interface{}) error {
 // DecodeOption is a func to configure optional Response settings
 type DecodeOption func(c context.Context, resp *Response) error
 
-// DecodeWithJSON json decodes the body of the Response
-func DecodeWithJSON() DecodeOption {
+// WithJSONBody json decodes the body of the Response
+func WithJSONBody() DecodeOption {
 	return func(c context.Context, resp *Response) error {
 		resp.decodeFunc = jsonDecodeFunc
 		return nil
 	}
 }
 
-// DecodeWithGob gob decodes the body of the Response
-func DecodeWithGob() DecodeOption {
+// WithGobBody gob decodes the body of the Response
+func WithGobBody() DecodeOption {
 	return func(c context.Context, resp *Response) error {
 		resp.decodeFunc = gobDecodeFunc
 		return nil
 	}
 }
 
-// DecodeWithXML xml decodes the body of the Response
-func DecodeWithXML() DecodeOption {
+// WithXMLBody xml decodes the body of the Response
+func WithXMLBody() DecodeOption {
 	return func(c context.Context, resp *Response) error {
 		resp.decodeFunc = xmlDecodeFunc
 		return nil
 	}
 }
 
-// DecodeWithCopiedBody makes a copy of the body available in the response.
+// WithCopiedBody makes a copy of the body available in the response.
 // This is helpful if you anticipate the decode failing and want to do a full
 // dump of the response.
-func DecodeWithCopiedBody() DecodeOption {
+func WithCopiedBody() DecodeOption {
 	return func(c context.Context, resp *Response) error {
 		buf := getBuffer()
 		resp.body = io.TeeReader(resp.response.Body, buf)
@@ -63,8 +63,8 @@ func DecodeWithCopiedBody() DecodeOption {
 	}
 }
 
-// DecodeWithCustomFunc uses the provided DecodeFunc to Decode the response
-func DecodeWithCustomFunc(decodeFunc DecodeFunc) DecodeOption {
+// WithCustomFunc uses the provided DecodeFunc to Decode the response
+func WithCustomFunc(decodeFunc DecodeFunc) DecodeOption {
 	return func(c context.Context, resp *Response) error {
 		resp.decodeFunc = decodeFunc
 		return nil
