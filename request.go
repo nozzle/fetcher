@@ -40,7 +40,7 @@ type Request struct {
 	method  string
 	url     string
 	payload io.Reader
-	headers map[string]string
+	headers []header
 	cookies []*http.Cookie
 
 	// BasicAuth options
@@ -73,7 +73,6 @@ func (cl *Client) NewRequest(c context.Context, method, url string, opts ...Requ
 		method:          method,
 		url:             url,
 		maxAttempts:     1,
-		headers:         map[string]string{},
 		backoffStrategy: defaultBackoffStrategy,
 	}
 	var err error
@@ -95,8 +94,8 @@ func (cl *Client) NewRequest(c context.Context, method, url string, opts ...Requ
 	}
 
 	// add the headers
-	for key, value := range req.headers {
-		req.request.Header.Add(key, value)
+	for i := range req.headers {
+		req.request.Header.Add(req.headers[i].key, req.headers[i].value)
 	}
 
 	// add cookies
@@ -140,15 +139,23 @@ func (req *Request) Equal(reqComp *Request) (bool, string) {
 	if req.maxAttempts != reqComp.maxAttempts {
 		return false, fmt.Sprintf("maxAttempts: %d != %d", req.maxAttempts, reqComp.maxAttempts)
 	}
-	for key, value := range req.headers {
-		if _, ok := reqComp.headers[key]; !ok {
-			return false, fmt.Sprintf("headers-key: '%s' not found", key)
-		}
-		if value != reqComp.headers[key] {
-			return false, fmt.Sprintf("headers-value: key '%s' | %s != %s", key, value, reqComp.headers[key])
+	for i := range req.headers {
+		if req.headers[i] != reqComp.headers[i] {
+			return false, fmt.Sprintf("headers[%d]: %s != %s", i, req.headers[i], reqComp.headers[i])
 		}
 	}
 	return true, ""
+}
+
+type header struct {
+	key, value string
+}
+
+func newHeader(key, value string) header {
+	return header{
+		key:   key,
+		value: value,
+	}
 }
 
 // RequestOption is a func to configure optional Request settings
@@ -161,8 +168,8 @@ func WithJSONPayload(payload interface{}) RequestOption {
 		if payload == nil {
 			return nil
 		}
-		req.headers[AcceptHeader] = ContentTypeJSON
-		req.headers[ContentTypeHeader] = ContentTypeJSON
+		req.headers = append(req.headers, newHeader(AcceptHeader, ContentTypeJSON))
+		req.headers = append(req.headers, newHeader(ContentTypeHeader, ContentTypeJSON))
 		buf := getBuffer()
 		if err := json.NewEncoder(buf).Encode(payload); err != nil {
 			return err
@@ -231,7 +238,7 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 	// set multipart request options
 	req.optMultiPartForm = true
 	req.payload = pipeReader
-	req.headers["Content-Type"] = mpw.FormDataContentType()
+	req.headers = append(req.headers, newHeader(ContentTypeHeader, mpw.FormDataContentType()))
 
 	go func() {
 		var err error
@@ -272,7 +279,7 @@ func WithReaderPayload(payload io.Reader) RequestOption {
 // WithHeader adds the given key/value combo to the Request headers
 func WithHeader(key, value string) RequestOption {
 	return func(c context.Context, req *Request) error {
-		req.headers[key] = value
+		req.headers = append(req.headers, newHeader(key, value))
 		return nil
 	}
 }
@@ -280,7 +287,7 @@ func WithHeader(key, value string) RequestOption {
 // WithAcceptJSONHeader adds Accept: application/json to the Request headers
 func WithAcceptJSONHeader() RequestOption {
 	return func(c context.Context, req *Request) error {
-		req.headers[AcceptHeader] = ContentTypeJSON
+		req.headers = append(req.headers, newHeader(AcceptHeader, ContentTypeJSON))
 		return nil
 	}
 }

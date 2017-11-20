@@ -35,7 +35,12 @@ func TestNewRequest(t *testing.T) {
 				method:      "GET",
 				url:         "http://mywebsite.com",
 				maxAttempts: 1,
-				headers:     map[string]string{"Accept": "application/json"},
+				headers: []header{
+					{
+						key:   "Accept",
+						value: "application/json",
+					},
+				},
 			},
 			false,
 		},
@@ -52,7 +57,12 @@ func TestNewRequest(t *testing.T) {
 				method:      "GET",
 				url:         "http://mywebsite.com",
 				maxAttempts: 1,
-				headers:     map[string]string{"Accept": "application/json"},
+				headers: []header{
+					{
+						key:   "Accept",
+						value: "application/json",
+					},
+				},
 			},
 			false,
 		},
