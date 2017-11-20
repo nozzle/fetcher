@@ -78,6 +78,9 @@ func (cl *Client) NewRequest(c context.Context, method, url string, opts ...Requ
 	}
 	var err error
 
+	// prepend options with cl.parentRequestOptions
+	opts = append(cl.parentRequestOptions, opts...)
+
 	// execute all options
 	for _, opt := range opts {
 		if err = opt(c, req); err != nil {
