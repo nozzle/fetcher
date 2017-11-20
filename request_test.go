@@ -23,8 +23,25 @@ func TestNewRequest(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"no options - GET with headers",
+			"GET with headers",
 			&Client{},
+			args{
+				c:      ctx,
+				method: http.MethodGet,
+				url:    "http://mywebsite.com",
+				opts:   []RequestOption{RequestWithAcceptJSONHeader()},
+			},
+			&Request{
+				method:      "GET",
+				url:         "http://mywebsite.com",
+				maxAttempts: 1,
+				headers:     map[string]string{"Accept": "application/json"},
+			},
+			false,
+		},
+		{
+			"client parent options - GET with headers",
+			&Client{parentRequestOptions: []RequestOption{RequestWithAcceptJSONHeader()}},
 			args{
 				c:      ctx,
 				method: http.MethodGet,

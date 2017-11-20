@@ -15,6 +15,9 @@ var _ Fetcher = (*Client)(nil)
 type Client struct {
 	client *http.Client
 
+	// parentRequestOptions will be added to every NewRequest created with this Client
+	parentRequestOptions []RequestOption
+
 	keepAlive        time.Duration
 	handshakeTimeout time.Duration
 
@@ -139,6 +142,14 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	}
 
 	return resp, nil
+}
+
+// WithRequestOptions sets RequestOptions to be inherited by each NewRequest
+func WithRequestOptions(opts []RequestOption) ClientOption {
+	return func(c context.Context, cl *Client) error {
+		cl.parentRequestOptions = opts
+		return nil
+	}
 }
 
 // Get is a helper func for Do, setting the Method internally
