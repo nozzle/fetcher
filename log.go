@@ -6,36 +6,36 @@ import "fmt"
 // LogFunc is a pluggable log function
 type LogFunc func(string)
 
-// ClientWithDebugLogFunc pipes all debug logs to the supplied function
+// WithClientDebugLogFunc pipes all debug logs to the supplied function
 // All requests from this client inherit this logger
-func ClientWithDebugLogFunc(fn LogFunc) ClientOption {
+func WithClientDebugLogFunc(fn LogFunc) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.debugLogFunc = fn
 		return nil
 	}
 }
 
-// ClientWithErrorLogFunc pipes all error logs to the supplied function
+// WithClientErrorLogFunc pipes all error logs to the supplied function
 // All requests from this client inherit this logger
-func ClientWithErrorLogFunc(fn LogFunc) ClientOption {
+func WithClientErrorLogFunc(fn LogFunc) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.errorLogFunc = fn
 		return nil
 	}
 }
 
-// RequestWithDebugLogFunc pipes all debug logs to the supplied function
+// WithRequestDebugLogFunc pipes all debug logs to the supplied function
 // This overrides and replaces the inherited client functions
-func RequestWithDebugLogFunc(fn LogFunc) RequestOption {
+func WithRequestDebugLogFunc(fn LogFunc) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.debugLogFunc = fn
 		return nil
 	}
 }
 
-// RequestWithErrorLogFunc pipes all error logs to the supplied function
+// WithRequestErrorLogFunc pipes all error logs to the supplied function
 // This overrides and replaces the inherited client functions
-func RequestWithErrorLogFunc(fn LogFunc) RequestOption {
+func WithRequestErrorLogFunc(fn LogFunc) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.errorLogFunc = fn
 		return nil

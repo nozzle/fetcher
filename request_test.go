@@ -29,7 +29,7 @@ func TestNewRequest(t *testing.T) {
 				c:      ctx,
 				method: http.MethodGet,
 				url:    "http://mywebsite.com",
-				opts:   []RequestOption{RequestWithAcceptJSONHeader()},
+				opts:   []RequestOption{WithAcceptJSONHeader()},
 			},
 			&Request{
 				method:      "GET",
@@ -41,12 +41,12 @@ func TestNewRequest(t *testing.T) {
 		},
 		{
 			"client parent options - GET with headers",
-			&Client{parentRequestOptions: []RequestOption{RequestWithAcceptJSONHeader()}},
+			&Client{parentRequestOptions: []RequestOption{WithAcceptJSONHeader()}},
 			args{
 				c:      ctx,
 				method: http.MethodGet,
 				url:    "http://mywebsite.com",
-				opts:   []RequestOption{RequestWithAcceptJSONHeader()},
+				opts:   []RequestOption{WithAcceptJSONHeader()},
 			},
 			&Request{
 				method:      "GET",

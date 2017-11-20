@@ -209,16 +209,16 @@ func (cl *Client) Delete(c context.Context, url string, opts ...RequestOption) (
 // ClientOption is a func to configure optional Client settings
 type ClientOption func(c context.Context, cl *Client) error
 
-// ClientWithKeepAlive is a ClientOption that sets the cl.keepAlive field to the given duration
-func ClientWithKeepAlive(dur time.Duration) ClientOption {
+// WithKeepAlive is a ClientOption that sets the cl.keepAlive field to the given duration
+func WithKeepAlive(dur time.Duration) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.keepAlive = dur
 		return nil
 	}
 }
 
-// ClientWithHandshakeTimeout is a ClientOption that sets the cl.handshakeTimeout field to the given duration
-func ClientWithHandshakeTimeout(dur time.Duration) ClientOption {
+// WithHandshakeTimeout is a ClientOption that sets the cl.handshakeTimeout field to the given duration
+func WithHandshakeTimeout(dur time.Duration) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.handshakeTimeout = dur
 		return nil

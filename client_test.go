@@ -23,8 +23,8 @@ func TestNewClient(t *testing.T) {
 			args{
 				context.Background(),
 				[]ClientOption{
-					ClientWithKeepAlive(15 * time.Second),
-					ClientWithHandshakeTimeout(30 * time.Second),
+					WithKeepAlive(15 * time.Second),
+					WithHandshakeTimeout(30 * time.Second),
 				},
 			},
 			&Client{

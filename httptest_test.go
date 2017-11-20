@@ -95,15 +95,15 @@ func TestEndToEndWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithJSON()},
+			[]DecodeOption{WithJSONBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
 			"Basic JSON detect encoding",
 			context.Background(),
-			[]ClientOption{ClientWithDebugLogFunc(testLogFunc(t))},
+			[]ClientOption{WithClientDebugLogFunc(testLogFunc(t))},
 			http.MethodGet,
-			[]RequestOption{RequestWithAcceptJSONHeader()},
+			[]RequestOption{WithAcceptJSONHeader()},
 			&serverData{
 				headers:       map[string]string{ContentTypeHeader: ContentTypeJSON},
 				encodableData: testObject{URL: "https://nozzle.io/", Count: 30},
@@ -123,7 +123,7 @@ func TestEndToEndWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithCustomFunc(jsonDecodeFunc)},
+			[]DecodeOption{WithCustomFunc(jsonDecodeFunc)},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -131,13 +131,13 @@ func TestEndToEndWithObject(t *testing.T) {
 			context.Background(),
 			[]ClientOption{},
 			http.MethodGet,
-			[]RequestOption{RequestWithHeader(AcceptHeader, ContentTypeGob)},
+			[]RequestOption{WithHeader(AcceptHeader, ContentTypeGob)},
 			&serverData{
 				headers:       map[string]string{ContentTypeHeader: ContentTypeGob},
 				encodableData: testObject{URL: "https://nozzle.io/", Count: 30},
 				statusCode:    200,
 			},
-			[]DecodeOption{DecodeWithGob()},
+			[]DecodeOption{WithGobBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -145,7 +145,7 @@ func TestEndToEndWithObject(t *testing.T) {
 			context.Background(),
 			[]ClientOption{},
 			http.MethodGet,
-			[]RequestOption{RequestWithHeader(AcceptHeader, ContentTypeGob)},
+			[]RequestOption{WithHeader(AcceptHeader, ContentTypeGob)},
 			&serverData{
 				headers:       map[string]string{ContentTypeHeader: ContentTypeGob},
 				encodableData: testObject{URL: "https://nozzle.io/", Count: 30},
@@ -159,13 +159,13 @@ func TestEndToEndWithObject(t *testing.T) {
 			context.Background(),
 			[]ClientOption{},
 			http.MethodGet,
-			[]RequestOption{RequestWithHeader(AcceptHeader, ContentTypeXML)},
+			[]RequestOption{WithHeader(AcceptHeader, ContentTypeXML)},
 			&serverData{
 				headers:       map[string]string{ContentTypeHeader: ContentTypeXML},
 				encodableData: testObject{URL: "https://nozzle.io/", Count: 30},
 				statusCode:    200,
 			},
-			[]DecodeOption{DecodeWithXML()},
+			[]DecodeOption{WithXMLBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -173,7 +173,7 @@ func TestEndToEndWithObject(t *testing.T) {
 			context.Background(),
 			[]ClientOption{},
 			http.MethodGet,
-			[]RequestOption{RequestWithHeader(AcceptHeader, ContentTypeXML)},
+			[]RequestOption{WithHeader(AcceptHeader, ContentTypeXML)},
 			&serverData{
 				headers:       map[string]string{ContentTypeHeader: ContentTypeXML},
 				encodableData: testObject{URL: "https://nozzle.io/", Count: 30},
@@ -243,7 +243,7 @@ func TestEndToEndGetPostPutPatchWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithJSON()},
+			[]DecodeOption{WithJSONBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -257,7 +257,7 @@ func TestEndToEndGetPostPutPatchWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithJSON()},
+			[]DecodeOption{WithJSONBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -271,7 +271,7 @@ func TestEndToEndGetPostPutPatchWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithJSON()},
+			[]DecodeOption{WithJSONBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 		{
@@ -285,7 +285,7 @@ func TestEndToEndGetPostPutPatchWithObject(t *testing.T) {
 				body:       []byte(`{"URL":"https://nozzle.io/","Count":30}`),
 				statusCode: 200,
 			},
-			[]DecodeOption{DecodeWithJSON()},
+			[]DecodeOption{WithJSONBody()},
 			testObject{URL: "https://nozzle.io/", Count: 30},
 		},
 	}

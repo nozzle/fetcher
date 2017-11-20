@@ -52,13 +52,13 @@ func TestSharedCount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// *** BEGIN FETCHERMOCK SETUP ***
-			fm, err := fetchermock.NewClient(tt.args.c, fetchermock.ClientWithExpectationsInOrder(true))
+			fm, err := fetchermock.NewClient(tt.args.c, fetchermock.WithExpectationsInOrder(true))
 			if err != nil {
 				t.Fatal(err)
 			}
 			fm.ExpectRequest(tt.args.c, http.MethodGet, tt.args.reqURL,
 				fetchermock.WithRequestOptions(
-					fetcher.RequestWithMaxAttempts(3),
+					fetcher.WithMaxAttempts(3),
 				),
 				fetchermock.WithResponseStatusCode(200),
 				fetchermock.WithResponseBodyBytes(tt.args.respBody),
@@ -82,8 +82,8 @@ func TestSharedCount(t *testing.T) {
 func sharedCount(c context.Context, f fetcher.Fetcher, uri string) (int, error) {
 	apiURL := "http://api.pinterest.com/v1/urls/count.json?callback=receiveCount&url=" + url.QueryEscape(uri)
 	resp, err := f.Get(c, apiURL,
-		fetcher.RequestWithMaxAttempts(3),
-		fetcher.RequestWithAfterDoFunc(func(req *fetcher.Request, resp *fetcher.Response) error {
+		fetcher.WithMaxAttempts(3),
+		fetcher.WithAfterDoFunc(func(req *fetcher.Request, resp *fetcher.Response) error {
 			if resp.StatusCode() >= 500 {
 				return errors.New("Status Code Error")
 			}
