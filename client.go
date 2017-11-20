@@ -79,17 +79,33 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 
 	req.client = cl
 
-	reqc := req.request.WithContext(c)
+	httpResp, err := httpRespWithRetries(c, req)
+	if err != nil {
+		return nil, err
+	}
 
+	resp := NewResponse(c, req, httpResp)
+
+	// execute all afterDoFuncs
+	for _, afterDo := range req.afterDoFuncs {
+		if err = afterDo(req, resp); err != nil {
+			return nil, err
+		}
+	}
+
+	return resp, nil
+}
+
+func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error) {
+	reqc := req.request.WithContext(c)
 	if buf, ok := req.payload.(*bytes.Buffer); ok {
 		defer putBuffer(buf)
 	}
-
 	var httpResp *http.Response
 	var err error
 	for i := 1; i <= req.maxAttempts; i++ {
 		req.debugf("request attempt #%d", i)
-		httpResp, err = cl.client.Do(reqc)
+		httpResp, err = req.client.client.Do(reqc)
 		if err != nil {
 			return nil, err
 		}
@@ -132,16 +148,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 		}
 	}
 
-	resp := NewResponse(c, req, httpResp)
-
-	// execute all afterDoFuncs
-	for _, afterDo := range req.afterDoFuncs {
-		if err = afterDo(req, resp); err != nil {
-			return nil, err
-		}
-	}
-
-	return resp, nil
+	return httpResp, nil
 }
 
 // WithRequestOptions sets RequestOptions to be inherited by each NewRequest
