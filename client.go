@@ -107,6 +107,7 @@ func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error
 		req.debugf("request attempt #%d", i)
 		httpResp, err = req.client.client.Do(reqc)
 		if err != nil {
+			req.errorf("http.Client.Do err: %s | req: %s", err.Error(), req.String())
 			return nil, err
 		}
 
