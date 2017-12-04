@@ -118,5 +118,7 @@ func mockHTTPResponse(c context.Context, expReq *ExpectedRequest) *http.Response
 	for key, value := range expReq.responseHeaders {
 		resp.Header.Set(key, value)
 	}
+	resp.StatusCode = expReq.responseStatusCode
+	resp.Status = expReq.responseStatus
 	return resp
 }
