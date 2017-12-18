@@ -62,6 +62,7 @@ type Request struct {
 	// retry config
 	maxAttempts     int
 	backoffStrategy backoffStrategy
+	retryOnEOFError bool
 
 	errorLogFunc LogFunc
 	debugLogFunc LogFunc
@@ -199,6 +200,14 @@ func WithGobPayload(payload interface{}) RequestOption {
 func WithBytesPayload(payload []byte) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.payload = bytes.NewReader(payload)
+		return nil
+	}
+}
+
+// WithRetryOnEOFError adds the io.EOF error to the retry loop
+func WithRetryOnEOFError() RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.retryOnEOFError = true
 		return nil
 	}
 }

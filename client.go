@@ -3,6 +3,7 @@ package fetcher
 import (
 	"bytes"
 	"context"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptrace"
@@ -103,53 +104,68 @@ func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error
 	}
 	var httpResp *http.Response
 	var err error
-	for i := 1; i <= req.maxAttempts; i++ {
+	for i := 1; ; i++ {
 		req.debugf("request attempt #%d", i)
 		httpResp, err = req.client.client.Do(reqc)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			req.errorf("http.Client.Do err: %s | req: %s", err.Error(), req.String())
 			return nil, err
 		}
 
+		switch {
+		// returned when there is an underlying bad connection, so we want to retry as if it's a 500+ StatusCode
+		case err == io.EOF:
+			if !req.retryOnEOFError {
+				req.errorf("http.Client.Do err: %s | req: %s", err.Error(), req.String())
+				return nil, err
+			}
+			req.debugf("http.Client.Do returned io.EOF - request will retry | req: %s", req.String())
+
 		// if we used a multipart form, we need to check for an error from the goroutine
-		if i == 1 && req.optMultiPartForm && req.multiPartFormErr != nil {
-			return nil, err
-		}
+		case i == 1 && req.optMultiPartForm && req.multiPartFormErr != nil:
+			return nil, req.multiPartFormErr
 
 		// further attempts will be made only on 500+ status codes
 		// NOTE: the error returned from cl.client.Do(reqc) only contains scenarios regarding
 		// a bad request given, or a response with Location header missing or bad
-		if httpResp.StatusCode < 500 {
+		case httpResp.StatusCode < 500:
 			req.debugf("status code %d < 500, exiting retry loop", httpResp.StatusCode)
-			break
+			return httpResp, nil
+
 		}
 
-		// break out of the retry loop if this is the last attempt, so we don't close the response body
+		// return resp and err if this is the last attempt, so we don't close the response body
 		// or sleep unnecessarily
 		if i == req.maxAttempts {
 			req.debugf("max attempts (%d) reached, exiting retry loop", req.maxAttempts)
-			break
+			return httpResp, err
 		}
 
-		// close the response body before we lose our reference to it
-		if err = httpResp.Body.Close(); err != nil {
-			req.errorf(err.Error())
-			return nil, err
+		if httpResp != nil {
+			// close the response body before we lose our reference to it
+			if err = httpResp.Body.Close(); err != nil {
+				req.errorf(err.Error())
+				return nil, err
+			}
 		}
 
 		// wait before retrying, returning early if the context is cancelled
-		delay := req.backoffStrategy.waitDuration(i)
-		req.debugf("waiting %s before next retry", delay)
-
-		select {
-		case <-time.After(delay):
-		case <-c.Done():
-			req.debugf("context cancelled during backoff delay")
-			return nil, c.Err()
+		if err = req.waitForRetry(c, i); err != nil {
+			return nil, err
 		}
 	}
+}
 
-	return httpResp, nil
+func (req *Request) waitForRetry(c context.Context, i int) error {
+	delay := req.backoffStrategy.waitDuration(i)
+	req.debugf("waiting %s before next retry", delay)
+	select {
+	case <-time.After(delay):
+		return nil
+	case <-c.Done():
+		req.debugf("context cancelled during backoff delay")
+		return c.Err()
+	}
 }
 
 // WithRequestOptions sets RequestOptions to be inherited by each NewRequest
