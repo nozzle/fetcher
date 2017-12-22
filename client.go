@@ -107,18 +107,15 @@ func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error
 	for i := 1; ; i++ {
 		req.debugf("request attempt #%d", i)
 		httpResp, err = req.client.client.Do(reqc)
-		if err != nil && err != io.EOF {
+		if err != nil && req.isErrBreaking(err) {
 			req.errorf("http.Client.Do err: %s | req: %s", err.Error(), req.String())
 			return nil, err
 		}
 
 		switch {
 		// returned when there is an underlying bad connection, so we want to retry as if it's a 500+ StatusCode
+		// NOTE: the io.EOF error will only be handled here if the WithRetryOnEOFError has been included with the Request
 		case err == io.EOF:
-			if !req.retryOnEOFError {
-				req.errorf("http.Client.Do err: %s | req: %s", err.Error(), req.String())
-				return nil, err
-			}
 			req.debugf("http.Client.Do returned io.EOF - request will retry | req: %s", req.String())
 
 		// if we used a multipart form, we need to check for an error from the goroutine
