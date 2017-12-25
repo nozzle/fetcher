@@ -140,3 +140,8 @@ func (resp *Response) Status() string {
 func (resp *Response) FinalURL() *url.URL {
 	return resp.response.Request.URL
 }
+
+// ContentType returns the Content-Type header value of the Response
+func (resp *Response) ContentType() string {
+	return resp.response.Header.Get("Content-Type")
+}
