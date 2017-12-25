@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Response is returned after executing client.Do
@@ -133,4 +134,9 @@ func (resp *Response) StatusCode() int {
 // Status exports resp.Status
 func (resp *Response) Status() string {
 	return resp.response.Status
+}
+
+// FinalURL returns the final URL from resp.Request
+func (resp *Response) FinalURL() *url.URL {
+	return resp.response.Request.URL
 }
