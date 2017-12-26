@@ -62,6 +62,7 @@ type Request struct {
 	// retry config
 	maxAttempts     int
 	backoffStrategy backoffStrategy
+	retryOnEOFError bool
 
 	errorLogFunc LogFunc
 	debugLogFunc LogFunc
@@ -203,6 +204,16 @@ func WithBytesPayload(payload []byte) RequestOption {
 	}
 }
 
+// WithRetryOnEOFError adds the io.EOF error to the retry loop
+// The io.EOF error indicates sending on a broken connection (see https://github.com/golang/go/issues/8946 & https://github.com/golang/go/issues/5312)
+// Including this option with a Request will allow fetcher to retry the request on io.EOF, in attempt to obtain a valid connection
+func WithRetryOnEOFError() RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.retryOnEOFError = true
+		return nil
+	}
+}
+
 // WithReaderMultipartPayload takes a filepath, opens the file and adds it to the request
 func WithReaderMultipartPayload(filename string, data io.Reader) RequestOption {
 	return func(c context.Context, req *Request) error {
@@ -266,6 +277,14 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 			return
 		}
 	}()
+}
+
+// isErrBreaking returns false if the given error is involved with an option called by the user
+func (req *Request) isErrBreaking(err error) bool {
+	if req.retryOnEOFError && err == io.EOF {
+		return false
+	}
+	return true
 }
 
 // WithReaderPayload sets the given payload for the Request
