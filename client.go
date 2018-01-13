@@ -19,8 +19,9 @@ type Client struct {
 	// parentRequestOptions will be added to every NewRequest created with this Client
 	parentRequestOptions []RequestOption
 
-	keepAlive        time.Duration
-	handshakeTimeout time.Duration
+	keepAlive           time.Duration
+	handshakeTimeout    time.Duration
+	maxIdleConnsPerHost int
 
 	errorLogFunc LogFunc
 	debugLogFunc LogFunc
@@ -246,6 +247,14 @@ func WithHandshakeTimeout(dur time.Duration) ClientOption {
 	}
 }
 
+// WithMaxIdleConnsPerHost is a ClientOption that sets the cl.maxIdleConnsPerHost field to the given int
+func WithMaxIdleConnsPerHost(maxConns int) ClientOption {
+	return func(c context.Context, cl *Client) error {
+		cl.maxIdleConnsPerHost = maxConns
+		return nil
+	}
+}
+
 // setClient creates the standard http.Client using the settings in the given Client
 func (cl *Client) setClient() {
 	cl.client = &http.Client{
@@ -255,6 +264,7 @@ func (cl *Client) setClient() {
 				KeepAlive: cl.keepAlive,
 			}).Dial,
 			TLSHandshakeTimeout: cl.handshakeTimeout,
+			MaxIdleConnsPerHost: cl.maxIdleConnsPerHost,
 		},
 	}
 }
