@@ -25,11 +25,13 @@ func TestNewClient(t *testing.T) {
 				[]ClientOption{
 					WithKeepAlive(15 * time.Second),
 					WithHandshakeTimeout(30 * time.Second),
+					WithMaxIdleConnsPerHost(20),
 				},
 			},
 			&Client{
-				keepAlive:        15 * time.Second,
-				handshakeTimeout: 30 * time.Second,
+				keepAlive:           15 * time.Second,
+				handshakeTimeout:    30 * time.Second,
+				maxIdleConnsPerHost: 20,
 			},
 			false,
 		},
