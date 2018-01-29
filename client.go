@@ -23,6 +23,9 @@ type Client struct {
 	handshakeTimeout    time.Duration
 	maxIdleConnsPerHost int
 
+	// Rate Limiting
+	rateLimit rateLimit
+
 	errorLogFunc LogFunc
 	debugLogFunc LogFunc
 }
@@ -81,7 +84,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 
 	req.client = cl
 
-	httpResp, err := httpRespWithRetries(c, req)
+	httpResp, err := doWithRetries(c, req)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +101,7 @@ func (cl *Client) Do(c context.Context, req *Request) (*Response, error) {
 	return resp, nil
 }
 
-func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error) {
+func doWithRetries(c context.Context, req *Request) (*http.Response, error) {
 	reqc := req.request.WithContext(c)
 	if buf, ok := req.payload.(*bytes.Buffer); ok {
 		defer putBuffer(buf)
@@ -106,6 +109,9 @@ func httpRespWithRetries(c context.Context, req *Request) (*http.Response, error
 	var httpResp *http.Response
 	var err error
 	for i := 1; ; i++ {
+		// run rate-limiting
+		req.client.rateLimit.limit(c)
+
 		req.debugf("request attempt #%d", i)
 		httpResp, err = req.client.client.Do(reqc)
 		if err != nil && req.isErrBreaking(err) {
@@ -251,6 +257,14 @@ func WithHandshakeTimeout(dur time.Duration) ClientOption {
 func WithMaxIdleConnsPerHost(maxConns int) ClientOption {
 	return func(c context.Context, cl *Client) error {
 		cl.maxIdleConnsPerHost = maxConns
+		return nil
+	}
+}
+
+// WithRateLimit is a ClientOption that sets the cl.rateLimitting up for this client
+func WithRateLimit(rate int, dur time.Duration) ClientOption {
+	return func(c context.Context, cl *Client) error {
+		cl.rateLimit = newRateLimit(rate, dur)
 		return nil
 	}
 }
