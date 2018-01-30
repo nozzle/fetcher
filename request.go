@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
+	"net/url"
 	"os"
 	"time"
 )
@@ -23,6 +24,9 @@ const (
 
 	// ContentTypeXML = "application/xml"
 	ContentTypeXML = "application/xml"
+
+	// ContentTypeURLEncoded = "application/x-www-form-urlencoded"
+	ContentTypeURLEncoded = "application/x-www-form-urlencoded"
 
 	// ContentTypeHeader = "Content-Type"
 	ContentTypeHeader = "Content-Type"
@@ -116,11 +120,17 @@ func (cl *Client) NewRequest(c context.Context, method, url string, opts ...Requ
 
 // String is a stringer for Request
 func (req Request) String() string {
-	return fmt.Sprintf("method:%s | url:%s | maxAttempts:%d | headers:%s",
+	var payload []byte
+	switch v := req.payload.(type) {
+	case *bytes.Buffer:
+		payload = v.Bytes()
+	}
+	return fmt.Sprintf("method:%s | url:%s | maxAttempts:%d | headers:%s | payload (string):'%s'",
 		req.method,
 		req.url,
 		req.maxAttempts,
 		req.headers,
+		string(payload),
 	)
 }
 
@@ -163,7 +173,7 @@ func newHeader(key, value string) header {
 type RequestOption func(c context.Context, req *Request) error
 
 // WithJSONPayload json marshals the payload for the Request
-// and sets the content-type header to application/json
+// and sets the content-type and accept header to application/json
 func WithJSONPayload(payload interface{}) RequestOption {
 	return func(c context.Context, req *Request) error {
 		if payload == nil {
@@ -181,16 +191,33 @@ func WithJSONPayload(payload interface{}) RequestOption {
 }
 
 // WithGobPayload gob encodes the payload for the Request
-// and sets the content-type header to application/gob
+// and sets the content-type and accept header to application/gob
 func WithGobPayload(payload interface{}) RequestOption {
 	return func(c context.Context, req *Request) error {
 		if payload == nil {
 			return nil
 		}
+		req.headers = append(req.headers, newHeader(AcceptHeader, ContentTypeGob))
+		req.headers = append(req.headers, newHeader(ContentTypeHeader, ContentTypeGob))
 		buf := getBuffer()
 		if err := gob.NewEncoder(buf).Encode(payload); err != nil {
 			return err
 		}
+		req.payload = buf
+		return nil
+	}
+}
+
+// WithURLEncodedPayload encodes the payload for the Request
+// and sets the content-type header to application/x-www-form-urlencoded
+func WithURLEncodedPayload(payload url.Values) RequestOption {
+	return func(c context.Context, req *Request) error {
+		if payload == nil {
+			return nil
+		}
+		buf := getBuffer()
+		buf.WriteString(payload.Encode())
+		req.headers = append(req.headers, newHeader(ContentTypeHeader, ContentTypeURLEncoded))
 		req.payload = buf
 		return nil
 	}

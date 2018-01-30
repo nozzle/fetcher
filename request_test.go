@@ -1,9 +1,11 @@
 package fetcher
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -51,7 +53,7 @@ func TestNewRequest(t *testing.T) {
 				c:      ctx,
 				method: http.MethodGet,
 				url:    "http://mywebsite.com",
-				opts:   []RequestOption{WithAcceptJSONHeader()},
+				opts:   []RequestOption{},
 			},
 			&Request{
 				method:      "GET",
@@ -63,6 +65,37 @@ func TestNewRequest(t *testing.T) {
 						value: "application/json",
 					},
 				},
+			},
+			false,
+		},
+		{
+			"client with parent options - POST with URLEncoded payload",
+			&Client{parentRequestOptions: []RequestOption{WithAcceptJSONHeader()}},
+			args{
+				c:      ctx,
+				method: http.MethodPost,
+				url:    "http://mywebsite.com",
+				opts: []RequestOption{WithURLEncodedPayload(url.Values(map[string][]string{
+					"a": []string{"1"},
+					"b": []string{"2"},
+					"c": []string{"3"},
+				}))},
+			},
+			&Request{
+				method:      "POST",
+				url:         "http://mywebsite.com",
+				maxAttempts: 1,
+				headers: []header{
+					{
+						key:   "Accept",
+						value: "application/json",
+					},
+					{
+						key:   "Content-Type",
+						value: "application/x-www-form-urlencoded",
+					},
+				},
+				payload: bytes.NewBufferString("a=1&b=2&c=3"),
 			},
 			false,
 		},
