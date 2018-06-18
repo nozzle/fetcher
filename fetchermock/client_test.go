@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"testing"
 
-	jsoniter "github.com/json-iterator/go"
 	"github.com/nozzle/fetcher"
 	"github.com/nozzle/fetcher/fetchermock"
 )
@@ -26,23 +25,23 @@ func TestSharedCount(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			"Standard implementation",
+			"Good_JSON",
 			args{
 				context.Background(),
 				"https://nozzle.io",
 				"http://api.pinterest.com/v1/urls/count.json?callback=receiveCount&url=https%3A%2F%2Fnozzle.io",
-				[]byte(`receiveCount({"url":"https://nozzle.io/","count":30})`),
+				[]byte(`{"url":"https://nozzle.io/","count":30}`),
 			},
 			30,
 			false,
 		},
 		{
-			"missing 'count'",
+			"Bad_JSON",
 			args{
 				context.Background(),
 				"https://nozzle.io",
 				"http://api.pinterest.com/v1/urls/count.json?callback=receiveCount&url=https%3A%2F%2Fnozzle.io",
-				[]byte(`receiveCount({"url":"https://nozzle.io/","shared":30})`),
+				[]byte(`({"url":"https://nozzle.io/","count":30}`),
 			},
 			0,
 			true,
@@ -95,11 +94,15 @@ func sharedCount(c context.Context, f fetcher.Fetcher, uri string) (int, error) 
 	}
 	defer resp.Close()
 
-	beginJSON := len("receiveCount(")
-	j := jsoniter.Get(resp.MustBytes()[beginJSON:], "count")
-	if j.ValueType() == jsoniter.InvalidValue {
-		return 0, errors.New("invalid path")
+	type countResponse struct {
+		URL   string
+		Count int
 	}
 
-	return j.ToInt(), nil
+	countResp := &countResponse{}
+	if err = resp.Decode(c, countResp, fetcher.WithJSONBody()); err != nil {
+		return 0, err
+	}
+
+	return countResp.Count, nil
 }
