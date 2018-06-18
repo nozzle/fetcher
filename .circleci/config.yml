@@ -17,9 +17,9 @@ jobs:
       - checkout
             
       # specify any bash command here prefixed with `run: `
-      - run: go test -coverprofile=coverage.txt -covermode=atomic
+      - run: go test ./... -coverprofile=coverage.txt -covermode=atomic
       - run: bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
       - run: go get -u github.com/haya14busa/reviewdog/cmd/reviewdog
       - run: go get -u github.com/golang/lint/golint
-      - run: golint -set_exit_status ./... | reviewdog -f=golint -diff="git diff master" -reporter=github-pr-review
-      - run: go vet ./... 2>&1
+      - run: golint -set_exit_status ./... | reviewdog -f=golint -diff="git diff origin/master" -reporter=github-pr-review
+      - run: go vet ./... 2>&1 | reviewdog -f=govet -diff="git diff origin/master" -reporter=github-pr-review
