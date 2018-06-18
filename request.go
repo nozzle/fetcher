@@ -146,7 +146,7 @@ func (req *Request) Equal(reqComp *Request) (bool, string) {
 		return false, fmt.Sprintf("method: %s != %s", req.method, reqComp.method)
 	}
 	if req.url != reqComp.url {
-		return false, fmt.Sprintf("url: %s != %s", req.url, reqComp.url)
+		return false, fmt.Sprintf("url: %d != %s", req.url, reqComp.url)
 	}
 	if req.maxAttempts != reqComp.maxAttempts {
 		return false, fmt.Sprintf("maxAttempts: %d != %d", req.maxAttempts, reqComp.maxAttempts)
