@@ -21,5 +21,5 @@ jobs:
       - run: bash <(curl -s https://codecov.io/bash) -t $CODECOV_TOKEN
       - run: go get -u github.com/haya14busa/reviewdog/cmd/reviewdog
       - run: go get -u github.com/golang/lint/golint
-      - run: go tool vet -all -shadowstrict . 2>&1 | reviewdog -f=govet -ci="circle-ci"
-      - run: golint -set_exit_status ./... | reviewdog -f=golint -diff="git diff origin/master" -ci="circle-ci"
+      - run: go vet -all -shadowstrict . 2>&1 | reviewdog -f=govet -reporter="github-pr-review"
+      - run: golint -set_exit_status ./... | reviewdog -f=golint -diff="git diff origin/master" -reporter="github-pr-review"
