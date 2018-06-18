@@ -12,6 +12,7 @@ import (
 	"net/http/httptrace"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -308,10 +309,13 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 
 // isErrBreaking returns false if the given error is involved with an option called by the user
 func (req *Request) isErrBreaking(err error) bool {
-	if req.retryOnEOFError && err == io.EOF {
+	switch {
+	case strings.Contains(err.Error(), "read: connection reset by peer"),
+		req.retryOnEOFError && err == io.EOF:
 		return false
+	default:
+		return true
 	}
-	return true
 }
 
 // WithReaderPayload sets the given payload for the Request
