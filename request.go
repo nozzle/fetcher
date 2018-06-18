@@ -318,7 +318,7 @@ func (req *Request) isErrBreaking(err error) bool {
 	}
 }
 
-// WithReaderPayloads sets the given payload for the Request
+// WithReaderPayload sets the given payload for the Request
 func WithReaderPayload(payload io.Reader) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.payload = payload
