@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptrace"
+	"strings"
 	"time"
 )
 
@@ -124,6 +125,9 @@ func doWithRetries(c context.Context, req *Request) (*http.Response, error) {
 		// NOTE: the io.EOF error will only be handled here if the WithRetryOnEOFError has been included with the Request
 		case err == io.EOF:
 			req.debugf("http.Client.Do returned io.EOF - request will retry | req: %s", req.String())
+
+		case err != nil && strings.Contains(err.Error(), "read: connection reset by peer"):
+			req.debugf("http.Client.Do returned 'read: connection reset by peer' - request will retry | req: %s", req.String())
 
 		// if we used a multipart form, we need to check for an error from the goroutine
 		case i == 1 && req.optMultiPartForm && req.multiPartFormErr != nil:
