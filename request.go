@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptrace"
@@ -156,6 +157,29 @@ func (req *Request) Equal(reqComp *Request) (bool, string) {
 			return false, fmt.Sprintf("headers[%d]: %s != %s", i, req.headers[i], reqComp.headers[i])
 		}
 	}
+
+	if req.payload != nil && reqComp.payload != nil {
+		reqBody, err := ioutil.ReadAll(req.payload)
+		if err != nil {
+			return false, fmt.Sprintf("couldn't read body %s", err)
+		}
+
+		reqCompBody, err := ioutil.ReadAll(reqComp.payload)
+		if err != nil {
+			return false, fmt.Sprintf("couldn't read body %s", err)
+		}
+
+		if len(reqBody) != len(reqCompBody) {
+			return false, fmt.Sprintf("bodies don't match got %s expected %s", reqBody, reqCompBody)
+		}
+
+		for i := range reqBody {
+			if reqBody[i] != reqCompBody[i] {
+				return false, fmt.Sprintf("bodies don't match got %s expected %s", reqBody, reqCompBody)
+			}
+		}
+	}
+
 	return true, ""
 }
 
