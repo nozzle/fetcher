@@ -9,6 +9,8 @@ import (
 	"net/http/httptrace"
 	"strings"
 	"time"
+
+	"go.opencensus.io/plugin/ochttp"
 )
 
 var _ Fetcher = (*Client)(nil)
@@ -276,13 +278,15 @@ func WithRateLimit(rate int, dur time.Duration) ClientOption {
 // setClient creates the standard http.Client using the settings in the given Client
 func (cl *Client) setClient() {
 	cl.client = &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			Dial: (&net.Dialer{
-				KeepAlive: cl.keepAlive,
-			}).Dial,
-			TLSHandshakeTimeout: cl.handshakeTimeout,
-			MaxIdleConnsPerHost: cl.maxIdleConnsPerHost,
+		Transport: &ochttp.Transport{
+			Base: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					KeepAlive: cl.keepAlive,
+				}).Dial,
+				TLSHandshakeTimeout: cl.handshakeTimeout,
+				MaxIdleConnsPerHost: cl.maxIdleConnsPerHost,
+			},
 		},
 	}
 }
