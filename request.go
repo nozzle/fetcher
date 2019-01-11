@@ -46,6 +46,7 @@ type Request struct {
 	method  string
 	url     string
 	payload io.Reader
+	params  []param
 	headers []header
 	cookies []*http.Cookie
 
@@ -75,10 +76,10 @@ type Request struct {
 }
 
 // NewRequest returns a new Request with the given method/url and options executed
-func (cl *Client) NewRequest(c context.Context, method, url string, opts ...RequestOption) (*Request, error) {
+func (cl *Client) NewRequest(c context.Context, method, urlStr string, opts ...RequestOption) (*Request, error) {
 	req := &Request{
 		method:          method,
-		url:             url,
+		url:             urlStr,
 		maxAttempts:     1,
 		backoffStrategy: defaultBackoffStrategy,
 	}
@@ -103,6 +104,16 @@ func (cl *Client) NewRequest(c context.Context, method, url string, opts ...Requ
 	// add the headers
 	for i := range req.headers {
 		req.request.Header.Add(req.headers[i].key, req.headers[i].value)
+	}
+
+	// add the params and write to the URL
+	if len(req.params) > 0 {
+		params := url.Values{}
+		for i := range req.params {
+			params.Add(req.params[i].key, req.params[i].value)
+		}
+		req.request.URL.RawQuery = params.Encode()
+		req.url = req.request.URL.String()
 	}
 
 	// add cookies
@@ -194,6 +205,17 @@ func newHeader(key, value string) header {
 	}
 }
 
+type param struct {
+	key, value string
+}
+
+func newParam(key, value string) param {
+	return param{
+		key:   key,
+		value: value,
+	}
+}
+
 // RequestOption is a func to configure optional Request settings
 type RequestOption func(c context.Context, req *Request) error
 
@@ -244,6 +266,14 @@ func WithURLEncodedPayload(payload url.Values) RequestOption {
 		buf.WriteString(payload.Encode())
 		req.headers = append(req.headers, newHeader(ContentTypeHeader, ContentTypeURLEncoded))
 		req.payload = buf
+		return nil
+	}
+}
+
+// WithParam adds parameter value to be encoded for the Request
+func WithParam(key, value string) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.params = append(req.params, newParam(key, value))
 		return nil
 	}
 }
