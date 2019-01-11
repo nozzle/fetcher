@@ -1,0 +1,38 @@
+run:
+  deadline: 120s
+  skip-dirs:
+    - vendor
+
+linters-settings:
+  gocritic:
+    disabled-checks:
+      - singleCaseSwitch
+
+  gocyclo:
+    min-complexity: 20
+
+  golint:
+    min-confidence: 0
+
+  govet:
+    check-shadowing: true
+
+  misspell:
+    locale: US
+
+linters:
+  disable-all: true
+  enable:
+    - deadcode
+    - gocritic
+    - gocyclo
+    - golint
+    - govet
+    - ineffassign
+    - interfacer
+    - megacheck
+    - misspell
+    - unconvert
+
+issues:
+  exclude-use-default: false
