@@ -5,12 +5,12 @@ HTTP Client - Simplified - Mockable
 - A Client is required to make any http calls - good thing it's dead easy to create:
 - Simple Client example:
 
-```
+```go
   c := context.Background()
   cl, err := github.NewClient(c)
 ```
 - Advanced Client example:
-```
+```go
   c := context.Background()
   cl, err := fetcher.NewClient(c,
     fetcher.WithRequestOptions([]fetcher.RequestOption{
@@ -22,7 +22,7 @@ HTTP Client - Simplified - Mockable
 - This client can now be used as much as needed. 
 
 2. Pass your client to the function as a fetcher.Fetcher interface object:
-```
+```go
   func sharedCount(c context.Context, f fetcher.Fetcher, uri string) (int, error) {
 	
     ...
@@ -35,7 +35,7 @@ HTTP Client - Simplified - Mockable
   * See [fetchermock/client_test.go:TestSharedCount](https://github.com/nozzle/fetcher/blob/807c82bdfff749ca61c7cd3e80364fd119d42533/fetchermock/client_test.go#L22)
 
 3. Use your client to make a call:
-```
+```go
 func sharedCount(c context.Context, f fetcher.Fetcher, uri string) (int, error) {
   apiURL := "http://www.linkedin.com/countserv/count/share?format=json&url=" + url.QueryEscape(uri)
   resp, err := f.Get(c, apiURL, fetcher.WithMaxAttempts(3))
@@ -45,7 +45,7 @@ func sharedCount(c context.Context, f fetcher.Fetcher, uri string) (int, error) 
 ```
 
 4. Handle the response
-```
+```go
   defer resp.Close()
 
   switch {
