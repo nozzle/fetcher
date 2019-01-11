@@ -100,6 +100,27 @@ func TestNewRequest(t *testing.T) {
 			false,
 		},
 		{
+			"GET with params including parent options - params are sorted by key",
+			&Client{parentRequestOptions: []RequestOption{
+				WithParam("fizzle", "dizzle"),
+			}},
+			args{
+				c:      ctx,
+				method: http.MethodGet,
+				url:    "http://mywebsite.com",
+				opts: []RequestOption{
+					WithParam("foo", "bar"),
+					WithParam("dan: %shay", "c# programming"),
+				},
+			},
+			&Request{
+				method:      "GET",
+				url:         "http://mywebsite.com?dan%3A+%25shay=c%23+programming&fizzle=dizzle&foo=bar",
+				maxAttempts: 1,
+			},
+			false,
+		},
+		{
 			"erroring option - GET",
 			&Client{},
 			args{
