@@ -219,6 +219,14 @@ func newParam(key, value string) param {
 // RequestOption is a func to configure optional Request settings
 type RequestOption func(c context.Context, req *Request) error
 
+// WithBaseURL prepends the req.url with the given baseURL
+func WithBaseURL(baseURL string) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.url = baseURL + req.url
+		return nil
+	}
+}
+
 // WithJSONPayload json marshals the payload for the Request
 // and sets the content-type and accept header to application/json
 func WithJSONPayload(payload interface{}) RequestOption {

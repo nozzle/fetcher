@@ -141,6 +141,11 @@ func (resp *Response) FinalURL() *url.URL {
 	return resp.response.Request.URL
 }
 
+// RequestURL returns the resp.request.url
+func (resp *Response) RequestURL() string {
+	return resp.request.url
+}
+
 // ContentType returns the Content-Type header value of the Response
 func (resp *Response) ContentType() string {
 	return resp.response.Header.Get("Content-Type")
