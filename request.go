@@ -56,8 +56,9 @@ type Request struct {
 	password     string
 
 	// multipart form details
-	optMultiPartForm bool
-	multiPartFormErr error
+	optMultiPartForm         bool
+	multiPartFormFieldParams []param
+	multiPartFormErr         error
 
 	// append using WithAfterDoFunc option
 	afterDoFuncs []func(req *Request, resp *Response) error
@@ -304,16 +305,24 @@ func WithRetryOnEOFError() RequestOption {
 	}
 }
 
-// WithReaderMultipartPayload takes a filepath, opens the file and adds it to the request
-func WithReaderMultipartPayload(filename string, data io.Reader) RequestOption {
+// WithReaderMultipartField adds the fieldname and value to the multipart fields
+func WithReaderMultipartField(fieldname, value string) RequestOption {
 	return func(c context.Context, req *Request) error {
-		req.multipartPayload("file", filename, data)
+		req.multiPartFormFieldParams = append(req.multiPartFormFieldParams, newParam(fieldname, value))
 		return nil
 	}
 }
 
-// WithFilepathMultipartPayload takes a filepath, opens the file and adds it to the request
-func WithFilepathMultipartPayload(filepath string) RequestOption {
+// WithReaderMultipartPayload takes a filepath, opens the file and adds it to the request with the fieldname
+func WithReaderMultipartPayload(fieldname, filename string, data io.Reader) RequestOption {
+	return func(c context.Context, req *Request) error {
+		req.multipartPayload(fieldname, filename, data)
+		return nil
+	}
+}
+
+// WithFilepathMultipartPayload takes a filepath, opens the file and adds it to the request with the fieldname
+func WithFilepathMultipartPayload(fieldname, filepath string) RequestOption {
 	return func(c context.Context, req *Request) error {
 		f, err := os.Open(filepath)
 		if err != nil {
@@ -325,12 +334,12 @@ func WithFilepathMultipartPayload(filepath string) RequestOption {
 			return err
 		}
 
-		req.multipartPayload("file", fi.Name(), f)
+		req.multipartPayload(fieldname, fi.Name(), f)
 		return nil
 	}
 }
 
-// TODO: this still buffers internally- see https://groups.google.com/forum/#!topic/golang-nuts/Zjg5l4nKcQ0
+// TODO: this still buffers internally - see https://groups.google.com/forum/#!topic/golang-nuts/Zjg5l4nKcQ0
 func (req *Request) multipartPayload(fieldname, filename string, data io.Reader) {
 	// create a pipe to connect the data reader to the request payload
 	pipeReader, pipeWriter := io.Pipe()
@@ -338,6 +347,18 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 
 	// set multipart request options
 	req.optMultiPartForm = true
+
+	// set the multipart fields
+	for i := range req.multiPartFormFieldParams {
+		fldErr := mpw.WriteField(req.multiPartFormFieldParams[i].key, req.multiPartFormFieldParams[i].value)
+		if fldErr != nil {
+			req.multiPartFormErr = fldErr
+			req.errorf("mpw.CreateFormFile failed: %s", fldErr.Error())
+			return
+		}
+	}
+
+	// set the payload
 	req.payload = pipeReader
 	req.headers = append(req.headers, newHeader(ContentTypeHeader, mpw.FormDataContentType()))
 
