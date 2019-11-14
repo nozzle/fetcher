@@ -305,8 +305,8 @@ func WithRetryOnEOFError() RequestOption {
 	}
 }
 
-// WithReaderMultipartField adds the fieldname and value to the multipart fields
-func WithReaderMultipartField(fieldname, value string) RequestOption {
+// WithMultipartField adds the fieldname and value to the multipart fields
+func WithMultipartField(fieldname, value string) RequestOption {
 	return func(c context.Context, req *Request) error {
 		req.multiPartFormFieldParams = append(req.multiPartFormFieldParams, newParam(fieldname, value))
 		return nil
@@ -316,7 +316,7 @@ func WithReaderMultipartField(fieldname, value string) RequestOption {
 // WithReaderMultipartPayload takes a filepath, opens the file and adds it to the request with the fieldname
 func WithReaderMultipartPayload(fieldname, filename string, data io.Reader) RequestOption {
 	return func(c context.Context, req *Request) error {
-		req.multipartPayload(fieldname, filename, data)
+		req.multipartPayload(c, fieldname, filename, data)
 		return nil
 	}
 }
@@ -334,13 +334,13 @@ func WithFilepathMultipartPayload(fieldname, filepath string) RequestOption {
 			return err
 		}
 
-		req.multipartPayload(fieldname, fi.Name(), f)
+		req.multipartPayload(c, fieldname, fi.Name(), f)
 		return nil
 	}
 }
 
 // TODO: this still buffers internally - see https://groups.google.com/forum/#!topic/golang-nuts/Zjg5l4nKcQ0
-func (req *Request) multipartPayload(fieldname, filename string, data io.Reader) {
+func (req *Request) multipartPayload(c context.Context, fieldname, filename string, data io.Reader) {
 	// create a pipe to connect the data reader to the request payload
 	pipeReader, pipeWriter := io.Pipe()
 	mpw := multipart.NewWriter(pipeWriter)
@@ -353,7 +353,7 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 		fldErr := mpw.WriteField(req.multiPartFormFieldParams[i].key, req.multiPartFormFieldParams[i].value)
 		if fldErr != nil {
 			req.multiPartFormErr = fldErr
-			req.errorf("mpw.CreateFormFile failed: %s", fldErr.Error())
+			req.errorf("mpw.WriteField failed: %s", fldErr.Error())
 			return
 		}
 	}
@@ -362,32 +362,51 @@ func (req *Request) multipartPayload(fieldname, filename string, data io.Reader)
 	req.payload = pipeReader
 	req.headers = append(req.headers, newHeader(ContentTypeHeader, mpw.FormDataContentType()))
 
-	go func() {
+	part, err := mpw.CreateFormFile(fieldname, filename)
+	if err != nil {
+		req.multiPartFormErr = err
+		req.errorf("mpw.CreateFormFile failed: %s", err.Error())
+		return
+	}
+
+	// go routine the remainder of the multipart payload creation process
+	go copyMultipartToPipeWriter(c, req, pipeWriter, mpw, data, part)
+}
+
+func copyMultipartToPipeWriter(c context.Context, req *Request, pipeWriter *io.PipeWriter, mpw *multipart.Writer, data io.Reader, part io.Writer) {
+	defer pipeWriter.Close()
+	defer mpw.Close()
+	if closer, ok := data.(io.Closer); ok {
+		defer closer.Close()
+	}
+
+	errChan := make(chan error)
+	go func(errChan chan<- error) {
 		var err error
-		var part io.Writer
-		defer pipeWriter.Close()
-		if closer, ok := data.(io.Closer); ok {
-			defer closer.Close()
-		}
-
-		if part, err = mpw.CreateFormFile(fieldname, filename); err != nil {
-			req.multiPartFormErr = err
-			req.errorf("mpw.CreateFormFile failed: %s", err.Error())
-			return
-		}
-
 		if _, err = io.Copy(part, data); err != nil {
 			req.multiPartFormErr = err
 			req.errorf("io.Copy failed: %s", err.Error())
+			errChan <- err
 			return
 		}
 
 		if err = mpw.Close(); err != nil {
 			req.multiPartFormErr = err
 			req.errorf("mpw.Close failed: %s", err.Error())
+			errChan <- err
 			return
 		}
-	}()
+
+		errChan <- nil
+	}(errChan)
+
+	select {
+	case <-errChan:
+		return
+	case <-c.Done():
+		req.debugf("context cancelled during copyMultipartToPipeWriter")
+		return
+	}
 }
 
 // isErrBreaking returns false if the given error is involved with an option called by the user
