@@ -32,7 +32,7 @@ type exponentialBackoff struct {
 
 func (b exponentialBackoff) waitDuration(attempt int) time.Duration {
 	// use 0 based attempts since waiting only applies to retries
-	attempt = attempt - 1
+	attempt--
 	delay := b.min * 1 << uint(attempt)
 
 	if b.useJitter {
@@ -51,7 +51,7 @@ type linearBackoff struct {
 
 func (b linearBackoff) waitDuration(attempt int) time.Duration {
 	// use 0 based attempts since waiting only applies to retries
-	attempt = attempt - 1
+	attempt--
 	delay := b.min + b.interval*time.Duration(attempt)
 
 	if b.useJitter {
