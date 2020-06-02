@@ -85,13 +85,15 @@ func (resp *Response) Bytes() ([]byte, error) {
 		return resp.copiedBody.Bytes(), nil
 	}
 	buf := getBuffer()
-	buf.ReadFrom(resp.response.Body)
+	if _, err := buf.ReadFrom(resp.response.Body); err != nil {
+		return nil, err
+	}
 	if err := resp.response.Body.Close(); err != nil {
 		return nil, err
 	}
 	resp.bodyClosed = true
-	resp.copiedBody = buf
-	return buf.Bytes(), nil
+	resp.copiedBody = bytes.NewBufferString(buf.String())
+	return resp.copiedBody.Bytes(), nil
 }
 
 // MustBytes reads the body into a buffer and then returns the bytes
